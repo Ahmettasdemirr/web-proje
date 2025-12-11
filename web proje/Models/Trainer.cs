@@ -1,0 +1,22 @@
+﻿using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace FitnessCenterProject.Models
+{
+    public class Trainer
+    {
+        [Key]
+        public int TrainerId { get; set; }
+
+        [Required]
+        [StringLength(100)]
+        public string Name { get; set; } = string.Empty; // FIXED: string başlatıldı
+
+        // Gezinim Özellikleri (Diğer tablolara bağlantılar) - FIXED: Başlatıldı
+        public ICollection<TrainerSpecialization> TrainerSpecializations { get; set; } = new List<TrainerSpecialization>();
+        public ICollection<TrainerService> TrainerServices { get; set; } = new List<TrainerService>();
+        public ICollection<Appointment> Appointments { get; set; } = new List<Appointment>();
+        public ICollection<TrainerAvailability> Availabilities { get; set; } = new List<TrainerAvailability>();
+    }
+}
