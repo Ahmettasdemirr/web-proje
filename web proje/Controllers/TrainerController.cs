@@ -9,17 +9,15 @@ namespace FitnessCenterProject.Controllers
     [Authorize(Roles = "Admin")]
     public class TrainerController : Controller
     {
-        // Veritabanı bağlantısı için özel alan (Field)
+        
         private readonly ApplicationDbContext _context;
 
-        // Constructor (Yapıcı Metot): Servislerden DbContext'i alır ve _context alanına atar (Dependency Injection)
         public TrainerController(ApplicationDbContext context)
         {
             _context = context;
         }
 
-        // GET: Trainer/Index
-        // Tüm antrenörleri listeler
+       
         public async Task<IActionResult> Index()
         {
             // Veritabanındaki tüm Trainer kayıtlarını asenkron olarak çeker
