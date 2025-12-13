@@ -25,8 +25,6 @@ namespace FitnessCenterProject.Controllers
             var appointments = await _context.Appointments
                 .Include(a => a.Trainer)
                 .Include(a => a.Service)
-                // Eğer sadece o anki kullanıcının randevularını göstermek istiyorsanız bu satırı ekleyin:
-                // .Where(a => a.UserId == User.FindFirstValue(ClaimTypes.NameIdentifier)) 
                 .OrderByDescending(a => a.StartTime)
                 .ToListAsync();
 
