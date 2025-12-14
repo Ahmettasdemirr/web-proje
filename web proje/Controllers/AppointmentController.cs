@@ -28,7 +28,7 @@ namespace FitnessCenterProject.Controllers
                 .OrderByDescending(a => a.StartTime)
                 .ToListAsync();
 
-            return View(appointments); // Randevu listesini View'a gönderiyoruz.
+            return View(appointments); 
         }
 
         // ----------------------- CREATE (Randevu Formu) -----------------------
@@ -40,7 +40,7 @@ namespace FitnessCenterProject.Controllers
             return View();
         }
 
-        // POST: Appointment/Create
+        
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("TrainerId,ServiceId,StartTime,EndTime,Notes")] Appointment appointment)
@@ -48,7 +48,7 @@ namespace FitnessCenterProject.Controllers
             ViewData["TrainerId"] = new SelectList(_context.Trainers, "TrainerId", "Name", appointment.TrainerId);
             ViewData["ServiceId"] = new SelectList(_context.Services, "ServiceId", "Name", appointment.ServiceId);
 
-            // Oturum açmış kullanıcının ID'sini randevuya ekleme
+           
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId))
             {
