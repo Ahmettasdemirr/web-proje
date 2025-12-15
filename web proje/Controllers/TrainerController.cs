@@ -1,7 +1,7 @@
 ﻿using FitnessCenterProject.Data; // DbContext'i kullanmak için
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore; // ToListAsync() için
-using FitnessCenterProject.Models; // Trainer modelini kullanmak için
+using Microsoft.EntityFrameworkCore;
+using FitnessCenterProject.Models;
 using Microsoft.AspNetCore.Authorization;
 
 namespace FitnessCenterProject.Controllers

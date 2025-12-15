@@ -85,7 +85,7 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
-// Pipeline sırası
+
 app.UseAuthentication();
 app.UseAuthorization();
 
