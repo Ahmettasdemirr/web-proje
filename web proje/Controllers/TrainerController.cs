@@ -20,7 +20,7 @@ namespace FitnessCenterProject.Controllers
        
         public async Task<IActionResult> Index()
         {
-            // Veritabanındaki tüm Trainer kayıtlarını asenkron olarak çeker
+            
             var trainers = await _context.Trainers.ToListAsync();
 
             // Çekilen listeyi (Model) View'e gönderir
