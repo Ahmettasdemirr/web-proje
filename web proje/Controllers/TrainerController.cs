@@ -23,13 +23,13 @@ namespace FitnessCenterProject.Controllers
             
             var trainers = await _context.Trainers.ToListAsync();
 
-            // Çekilen listeyi (Model) View'e gönderir
+            
             return View(trainers);
         }
 
         public IActionResult Create()
         {
-            // Boş bir form göndereceğiz
+            
             return View();
         }
 
