@@ -11,9 +11,13 @@ namespace FitnessCenterProject.Models
 
         [Required]
         [StringLength(100)]
-        public string Name { get; set; } = string.Empty; // FIXED: string başlatıldı
+        public string Name { get; set; } = string.Empty;
 
-        // Gezinim Özellikleri (Diğer tablolara bağlantılar) - FIXED: Başlatıldı
+        // YENİ EKLENEN ÖZELLİK: Specialty (Uzmanlık alanı)
+        [StringLength(100)]
+        public string Specialty { get; set; } = string.Empty;
+
+        // Gezinim Özellikleri (Diğer tablolara bağlantılar)
         public ICollection<TrainerSpecialization> TrainerSpecializations { get; set; } = new List<TrainerSpecialization>();
         public ICollection<TrainerService> TrainerServices { get; set; } = new List<TrainerService>();
         public ICollection<Appointment> Appointments { get; set; } = new List<Appointment>();

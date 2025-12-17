@@ -1,0 +1,46 @@
+﻿@model IEnumerable<FitnessCenterProject.Models.Appointment>
+
+@{
+    ViewData["Title"] = "Yönetici Randevu Onayı";
+}
+
+<h1>Tüm Randevular</h1>
+<h4>Sadece Onay Bekleyen Randevular</h4>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Kullanıcı</th>
+            <th>Eğitmen</th>
+            <th>Hizmet</th>
+            <th>Başlangıç Zamanı</th>
+            <th>Durum</th>
+            <th>İşlem</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@(item.User?.FullName ?? item.User?.Email)</td> @* Kullanıcının Adını/E-postasını göster *@
+                <td>@(item.Trainer?.Name ?? "Bilinmiyor")</td>
+                <td>@(item.Service?.Name ?? "Bilinmiyor")</td>
+                <td>@item.StartTime.ToString("dd.MM.yyyy HH:mm")</td>
+                <td>
+                    @(item.IsConfirmed ? "✅ Onaylandı" : "❌ Beklemede")
+                </td>
+                <td>
+                    @if (!item.IsConfirmed)
+                    {
+                        <form asp-action="Confirm" method="post" style="display:inline;">
+                            <input type="hidden" name="id" value="@item.AppointmentId" />
+                            <button type="submit" class="btn btn-success btn-sm" onclick="return confirm('Bu randevuyu onaylamak istediğinizden emin misiniz?');">
+                                Onayla
+                            </button>
+                        </form>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

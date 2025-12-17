@@ -2,8 +2,6 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using FitnessCenterProject.Data;
 using FitnessCenterProject.Models;
-using System;
-using System.Security.Claims;
 using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.Authorization;
@@ -12,7 +10,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // --- 1. Veritabanı Bağlantısı ve DbContext Servisi ---
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-                         ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+                             ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
 // PostgreSQL DbContext Servisini Kaydet
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -29,6 +27,7 @@ builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
     options.Password.RequiredLength = 3;
     options.SignIn.RequireConfirmedAccount = false;
 })
+    // Adım 1.1'deki Güncelleme: Rol Desteği Eklendi.
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>();
 
@@ -57,18 +56,14 @@ using (var scope = app.Services.CreateScope())
     var serviceProvider = scope.ServiceProvider;
     try
     {
-        var context = serviceProvider.GetRequiredService<ApplicationDbContext>();
-
-        // Migration'ları uygular
-        context.Database.Migrate();
-
-        // Seed Data
+        // NOT: SeedData metodunu InitializeAsync olarak kabul ediyoruz.
+        // Bu kısım, rol ve admin kullanıcısı oluşturulması için kritiktir.
         FitnessCenterProject.Data.SeedData.InitializeAsync(serviceProvider).Wait();
     }
     catch (Exception ex)
     {
         var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "Veritabanı migration veya seed işlemi sırasında bir hata oluştu.");
+        logger.LogError(ex, "Veritabanı seed işlemi sırasında bir hata oluştu.");
     }
 }
 

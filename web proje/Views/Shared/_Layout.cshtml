@@ -1,4 +1,9 @@
-﻿<!DOCTYPE html>
+﻿@using Microsoft.AspNetCore.Identity
+@using FitnessCenterProject.Models
+@inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
+
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
@@ -18,14 +23,53 @@
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
+
                     <ul class="navbar-nav flex-grow-1">
+
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Anasayfa</a>
                         </li>
+
+                        @* --- Üye Menüleri: Randevularım (Giriş yapan herkes görür) --- *@
+                        @if (SignInManager.IsSignedIn(User))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-area="" asp-controller="Appointment" asp-action="Index">Randevularım</a>
+                            </li>
+                        }
+
+                        @* --- YÖNETİCİ MENÜSÜ BAŞLANGIÇ (Sadece Admin rolüne sahip kullanıcılar görür) --- *@
+                        @if (User.IsInRole("Admin"))
+                        {
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle text-dark" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    Admin Panel
+                                </a>
+                                <ul class="dropdown-menu" aria-labelledby="adminDropdown">
+                                    <li class="dropdown-item">
+                                        <a class="nav-link text-dark" asp-controller="Trainer" asp-action="Index">Eğitmen Yönetimi</a>
+                                    </li>
+                                    <li class="dropdown-item">
+                                        <a class="nav-link text-dark" asp-controller="Service" asp-action="Index">Hizmet Yönetimi</a>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li class="dropdown-item">
+                                        <a class="nav-link text-dark" asp-controller="AdminAppointment" asp-action="Index">Randevu Onayları</a>
+                                    </li>
+                                </ul>
+                            </li>
+                        }
+                        @* --- YÖNETİCİ MENÜSÜ SONU --- *@
+
+                        @* NOT: Privacy linkini tekrar ekliyorum *@
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Gizlilik</a>
                         </li>
+
                     </ul>
+                    @* Identity UI'dan gelen Giriş/Kayıt/Çıkış linklerini içerir *@
+                    <partial name="_LoginPartial" />
+
                 </div>
             </div>
         </nav>
@@ -38,7 +82,7 @@
 
     <footer class="border-top footer text-muted">
         <div class="container">
-            &copy; 2025 - web_proje - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+            &copy; @DateTime.Now.Year - web_proje - <a asp-area="" asp-controller="Home" asp-action="Privacy">Gizlilik</a>
         </div>
     </footer>
     <script src="~/lib/jquery/dist/jquery.min.js"></script>

@@ -6,10 +6,11 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace FitnessCenterProject.Controllers
 {
+    // RBAC: Sadece Admin rolüne sahip kullanıcılar erişebilir
     [Authorize(Roles = "Admin")]
     public class TrainerController : Controller
     {
-        
+
         private readonly ApplicationDbContext _context;
 
         public TrainerController(ApplicationDbContext context)
@@ -17,25 +18,26 @@ namespace FitnessCenterProject.Controllers
             _context = context;
         }
 
-       
+
         public async Task<IActionResult> Index()
         {
-            
+
             var trainers = await _context.Trainers.ToListAsync();
 
-            
+
             return View(trainers);
         }
 
         public IActionResult Create()
         {
-            
+
             return View();
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Name")] Trainer trainer) // Sadece Name alanını alıyoruz
+        // GÜNCELLEME: Specialty alanı Bind'e eklendi
+        public async Task<IActionResult> Create([Bind("Name,Specialty")] Trainer trainer)
         {
             // Veri Doğrulama (Data Validation) kontrolü
             if (ModelState.IsValid)
@@ -73,7 +75,8 @@ namespace FitnessCenterProject.Controllers
         // Düzenlenmiş veriyi alır ve veritabanında günceller
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("TrainerId,Name")] Trainer trainer)
+        // GÜNCELLEME: Specialty alanı Bind'e eklendi
+        public async Task<IActionResult> Edit(int id, [Bind("TrainerId,Name,Specialty")] Trainer trainer)
         {
             // URL'deki ID ile formdan gelen ID eşleşmiyorsa hata
             if (id != trainer.TrainerId)

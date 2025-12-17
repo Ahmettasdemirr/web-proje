@@ -1,0 +1,59 @@
+﻿@model FitnessCenterProject.Models.Appointment
+
+@{
+    ViewData["Title"] = "Randevu İptali";
+}
+
+<h1>Randevu İptali</h1>
+
+<h3>Bu randevuyu iptal etmek istediğinizden emin misiniz?</h3>
+<div>
+    <h4>Randevu Detayları</h4>
+    <hr />
+    <dl class="row">
+        <dt class="col-sm-3">
+            Eğitmen
+        </dt>
+        <dd class="col-sm-9">
+            {{-- GÜVENLİK KONTROLÜ: Trainer null değilse Adını göster --}}
+            @(Model.Trainer != null ? Model.Trainer.Name : "Bilinmiyor")
+        </dd>
+        <dt class="col-sm-3">
+            Hizmet
+        </dt>
+        <dd class="col-sm-9">
+            {{-- GÜVENLİK KONTROLÜ: Service null değilse Adını göster --}}
+            @(Model.Service != null ? Model.Service.Name : "Bilinmiyor")
+        </dd>
+        <dt class="col-sm-3">
+            Başlangıç Zamanı
+        </dt>
+        <dd class="col-sm-9">
+            @Html.DisplayFor(model => model.StartTime)
+        </dd>
+        <dt class="col-sm-3">
+            Bitiş Zamanı
+        </dt>
+        <dd class="col-sm-9">
+            @Html.DisplayFor(model => model.EndTime)
+        </dd>
+        <dt class="col-sm-3">
+            Notlar
+        </dt>
+        <dd class="col-sm-9">
+            @Html.DisplayFor(model => model.Notes)
+        </dd>
+        <dt class="col-sm-3">
+            Durum
+        </dt>
+        <dd class="col-sm-9">
+            @(Model.IsConfirmed ? "Onaylandı" : "Beklemede")
+        </dd>
+    </dl>
+
+    <form asp-action="Delete">
+        <input type="hidden" asp-for="AppointmentId" />
+        <input type="submit" value="Randevuyu İptal Et" class="btn btn-danger" /> |
+        <a asp-action="Index">Randevu Listesine Geri Dön</a>
+    </form>
+</div>

@@ -1,0 +1,53 @@
+﻿@model FitnessCenterProject.Models.Appointment
+
+@{
+    ViewData["Title"] = "Randevu Detayları";
+}
+
+<h1>Randevu Detayları</h1>
+
+<div>
+    <hr />
+    <dl class="row">
+        <dt class="col-sm-3">
+            Eğitmen
+        </dt>
+        <dd class="col-sm-9">
+            @(Model.Trainer != null ? Model.Trainer.Name : "Bilinmiyor")
+        </dd>
+        <dt class="col-sm-3">
+            Hizmet
+        </dt>
+        <dd class="col-sm-9">
+            @(Model.Service != null ? Model.Service.Name : "Bilinmiyor")
+        </dd>
+        <dt class="col-sm-3">
+            Başlangıç Zamanı
+        </dt>
+        <dd class="col-sm-9">
+            @Html.DisplayFor(model => model.StartTime)
+        </dd>
+        <dt class="col-sm-3">
+            Bitiş Zamanı
+        </dt>
+        <dd class="col-sm-9">
+            @Html.DisplayFor(model => model.EndTime)
+        </dd>
+        <dt class="col-sm-3">
+            Notlar
+        </dt>
+        <dd class="col-sm-9">
+            @Html.DisplayFor(model => model.Notes)
+        </dd>
+        <dt class="col-sm-3">
+            Durum
+        </dt>
+        <dd class="col-sm-9">
+            @(Model.IsConfirmed ? "Onaylandı" : "Beklemede")
+        </dd>
+    </dl>
+</div>
+<div>
+    <a asp-action="Edit" asp-route-id="@Model.AppointmentId" class="btn btn-warning">Düzenle</a> |
+    <a asp-action="Index">Randevu Listesine Geri Dön</a>
+</div>

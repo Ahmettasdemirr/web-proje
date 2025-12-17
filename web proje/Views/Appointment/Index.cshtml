@@ -28,15 +28,13 @@
             @foreach (var item in Model)
             {
                 <tr>
-                    {{-- Trainer ve Service verilerini çekmek için Controller'da .Include kullandık. --}}
-                    <td>@Html.DisplayFor(modelItem => item.Trainer.Name)</td>
-                    <td>@Html.DisplayFor(modelItem => item.Service.Name)</td>
+                    <td>@(item.Trainer != null ? item.Trainer.Name : "Yok")</td> @* Trainer için Null Kontrolü *@
+                    <td>@(item.Service != null ? item.Service.Name : "Yok")</td> @* Service için Null Kontrolü *@
                     <td>@Html.DisplayFor(modelItem => item.StartTime)</td>
                     <td>@Html.DisplayFor(modelItem => item.EndTime)</td>
                     <td>@Html.DisplayFor(modelItem => item.Notes)</td>
                     <td>@(item.IsConfirmed ? "Onaylandı" : "Beklemede")</td>
                     <td>
-                        {{-- Buraya Edit, Details, Delete butonlarını ekleyebilirsiniz --}}
                         <a asp-action="Edit" asp-route-id="@item.AppointmentId">Düzenle</a> |
                         <a asp-action="Details" asp-route-id="@item.AppointmentId">Detaylar</a> |
                         <a asp-action="Delete" asp-route-id="@item.AppointmentId">Sil</a>
