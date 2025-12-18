@@ -291,7 +291,7 @@ namespace FitnessCenterProject.Controllers
                     throw;
                 }
             }
-            // Başarılıysa Index'e yönlendir
+            
             return RedirectToAction(nameof(Index));
         }
 
