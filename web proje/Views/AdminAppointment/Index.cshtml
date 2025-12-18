@@ -1,44 +1,81 @@
 ﻿@model IEnumerable<FitnessCenterProject.Models.Appointment>
 
 @{
-    ViewData["Title"] = "Yönetici Randevu Onayı";
+    ViewData["Title"] = "Randevu Yönetim Paneli";
 }
 
-<h1>Tüm Randevular</h1>
-<h4>Sadece Onay Bekleyen Randevular</h4>
+<h1>Randevu Yönetim Paneli</h1>
+<p>Tüm randevuları buradan yönetebilir, onaylayabilir veya silebilirsiniz.</p>
+<hr />
 
 <table class="table table-striped">
     <thead>
         <tr>
-            <th>Kullanıcı</th>
+            <th>ID</th>
+            <th>Durum</th>
             <th>Eğitmen</th>
             <th>Hizmet</th>
             <th>Başlangıç Zamanı</th>
-            <th>Durum</th>
-            <th>İşlem</th>
+            <th>Kullanıcı (E-posta)</th>
+            <th>İşlemler</th>
         </tr>
     </thead>
     <tbody>
         @foreach (var item in Model)
         {
-            <tr>
-                <td>@(item.User?.FullName ?? item.User?.Email)</td> @* Kullanıcının Adını/E-postasını göster *@
-                <td>@(item.Trainer?.Name ?? "Bilinmiyor")</td>
-                <td>@(item.Service?.Name ?? "Bilinmiyor")</td>
-                <td>@item.StartTime.ToString("dd.MM.yyyy HH:mm")</td>
+            // Duruma göre satır rengi belirle: Onaylı=Yeşil, Beklemede=Sarı, Geçmiş ve Onaylanmamış=Kırmızı
+            string rowClass = item.IsConfirmed ? "table-success" : (item.StartTime < DateTime.Now && !item.IsConfirmed ? "table-danger" : "table-warning");
+
+            <tr class="@rowClass">
+                <td>@item.AppointmentId</td>
                 <td>
-                    @(item.IsConfirmed ? "✅ Onaylandı" : "❌ Beklemede")
-                </td>
-                <td>
-                    @if (!item.IsConfirmed)
+                    @if (item.IsConfirmed)
                     {
-                        <form asp-action="Confirm" method="post" style="display:inline;">
+                        <span class="badge bg-success">Onaylandı</span>
+                    }
+                    else if (item.StartTime < DateTime.Now)
+                    {
+                        <span class="badge bg-danger">Geçmiş/İptal Edilmeli</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-warning text-dark">Beklemede</span>
+                    }
+                </td>
+
+                @* CS8602 Düzeltmesi: Null Kontrolü eklendi (item.Trainer?.Name) *@
+                <td>@(item.Trainer?.Name)</td>
+
+                @* CS8602 Düzeltmesi: Null Kontrolü eklendi (item.Service?.Name) *@
+                <td>@(item.Service?.Name)</td>
+
+                <td>@item.StartTime.ToString("dd.MM.yyyy HH:mm")</td>
+
+                @* CS8602 Düzeltmesi: Null Kontrolü eklendi. User null ise UserId'yi göster (@item.User?.Email ?? item.UserId) *@
+                <td>@(item.User?.Email ?? item.UserId)</td>
+
+                <td>
+                    @if (!item.IsConfirmed && item.StartTime >= DateTime.Now)
+                    {
+                        // Sadece onaylanmamış ve tarihi geçmemiş randevular için ONAYLA butonu
+                        <form asp-controller="AdminAppointment" asp-action="Confirm" method="post" class="d-inline">
                             <input type="hidden" name="id" value="@item.AppointmentId" />
-                            <button type="submit" class="btn btn-success btn-sm" onclick="return confirm('Bu randevuyu onaylamak istediğinizden emin misiniz?');">
-                                Onayla
-                            </button>
+                            <input type="hidden" name="isConfirmed" value="true" />
+                            <button type="submit" class="btn btn-sm btn-success" onclick="return confirm('Bu randevuyu onaylamak istediğinizden emin misiniz?');">Onayla</button>
                         </form>
                     }
+                    else if (item.IsConfirmed)
+                    {
+                        // Onaylanmış randevular için REDDET butonu
+                        <form asp-controller="AdminAppointment" asp-action="Confirm" method="post" class="d-inline">
+                            <input type="hidden" name="id" value="@item.AppointmentId" />
+                            <input type="hidden" name="isConfirmed" value="false" />
+                            <button type="submit" class="btn btn-sm btn-secondary" onclick="return confirm('Bu randevunun onayını kaldırmak/Reddetmek istediğinizden emin misiniz?');">Reddet</button>
+                        </form>
+                    }
+
+                    <a asp-controller="AdminAppointment" asp-action="Details" asp-route-id="@item.AppointmentId" class="btn btn-sm btn-info">Detay</a>
+                    <a asp-controller="AdminAppointment" asp-action="Delete" asp-route-id="@item.AppointmentId" class="btn btn-sm btn-danger">Sil</a>
                 </td>
             </tr>
         }

@@ -13,35 +13,75 @@
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
             <div class="form-group mb-3">
-                <label asp-for="TrainerId" class="control-label"></label>
-                <select asp-for="TrainerId" class="form-control" asp-items="ViewBag.TrainerId"></select>
+                <label asp-for="ServiceId" class="control-label">Hizmet Seçin</label>
+
+                <select asp-for="ServiceId" class="form-control">
+                    @* KRİTİK DÜZELTME: Null kontrolü (CS8600/CS8602 çözümü) *@
+                    @{
+                        var serviceList = ViewData["ServiceId"] as SelectList;
+                    }
+
+                    @if (serviceList != null)
+                    {
+                        @foreach (var item in serviceList)
+                        {
+                            <option value="@item.Value">@item.Text</option>
+                        }
+                    }
+                    else
+                    {
+                        <option value="">Hizmetler yüklenemedi.</option>
+                    }
+                </select>
+
+                <span asp-validation-for="ServiceId" class="text-danger"></span>
             </div>
 
+            @* KRİTİK: Birleştirilmiş Tarih/Saat değerini POST etmek için gizli input *@
             <div class="form-group mb-3">
-                <label asp-for="ServiceId" class="control-label"></label>
-                <select asp-for="ServiceId" class="form-control" asp-items="ViewBag.ServiceId"></select>
-            </div>
-
-            <div class="form-group mb-3">
-                <label asp-for="StartTime" class="control-label"></label>
-                <input asp-for="StartTime" type="datetime-local" class="form-control" />
+                @* StartTime Label'ını kaldırıyoruz, kullanıcı Tarih ve Saati ayrı inputlarda görecek *@
+                <input asp-for="StartTime" type="hidden" id="hiddenStartTime" />
                 <span asp-validation-for="StartTime" class="text-danger"></span>
             </div>
 
+            @* GÖRÜNÜR TARİH SEÇİCİ (Datepicker) *@
             <div class="form-group mb-3">
-                <label asp-for="EndTime" class="control-label"></label>
-                <input asp-for="EndTime" type="datetime-local" class="form-control" />
-                <span asp-validation-for="EndTime" class="text-danger"></span>
+                <label for="datePickerInput" class="control-label">Tarih Seçiniz</label>
+                <div class="input-group date" id="datepicker">
+                    <input id="datePickerInput" type="text" class="form-control" placeholder="GG.AA.YYYY" autocomplete="off" required />
+                    <span class="input-group-append">
+                        <span class="input-group-text bg-white d-block">
+                            <i class="bi bi-calendar"></i>
+                        </span>
+                    </span>
+                </div>
+            </div>
+
+            @* GÖRÜNÜR SAAT SEÇİCİ (Time Input) *@
+            <div class="form-group mb-3">
+                <label for="timeInput" class="control-label">Saat Seçiniz</label>
+                <input id="timeInput" type="time" class="form-control" required />
+            </div>
+
+            @* DÜZELTME: Eğitmen Seçim Alanı (AJAX ile doldurulacak) *@
+            <div class="form-group mb-3" id="trainerSelectionGroup" style="display:none;">
+                <label asp-for="TrainerId" class="control-label">Müsait Eğitmen Seçin</label>
+                <select asp-for="TrainerId" class="form-control" id="trainerSelect" required>
+                    <option value="">-- Lütfen Önce Hizmet, Tarih ve Saat Seçiniz --</option>
+                </select>
+                <span asp-validation-for="TrainerId" class="text-danger"></span>
+                <small class="form-text text-muted" id="loadingIndicator" style="display:none;">Müsait eğitmenler yükleniyor...</small>
             </div>
 
             <div class="form-group mb-3">
-                <label asp-for="Notes" class="control-label"></label>
+                <label asp-for="Notes" class="control-label">Notlar</label>
                 <textarea asp-for="Notes" class="form-control"></textarea>
                 <span asp-validation-for="Notes" class="text-danger"></span>
             </div>
 
             <div class="form-group mt-4">
                 <input type="submit" value="Randevuyu Kaydet" class="btn btn-success" />
+                <a asp-action="Index" class="btn btn-secondary">İptal</a>
             </div>
         </form>
     </div>
@@ -55,4 +95,107 @@
     @{
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
+
+    @* Bootstrap Datepicker kütüphanesinin dahil edildiği varsayılmıştır. *@
+
+    <script>
+        $(document).ready(function () {
+            // Tarih Seçiciyi Başlatma
+            $('#datepicker').datepicker({
+                format: 'dd.mm.yyyy',
+                autoclose: true,
+                todayHighlight: true,
+                startDate: 'today',
+                language: 'tr'
+            });
+
+            // 1. Randevu kriterleri değiştiğinde tetiklenecek olaylar
+            $('#ServiceId, #datePickerInput, #timeInput').on('change', function () {
+                checkTrainerAvailability();
+            });
+
+            // 2. Form Göndermeden Önce Tarih ve Saati Birleştirme
+            $('form').on('submit', function (e) {
+                var date = $('#datePickerInput').val();
+                var time = $('#timeInput').val();
+
+                if (!date || !time) {
+                    // Eğer tarih/saat seçilmediyse formu gönderme
+                    e.preventDefault();
+                    alert("Lütfen bir tarih ve saat seçiniz.");
+                    return;
+                }
+
+                var combinedDateTime = date + ' ' + time;
+                $('#hiddenStartTime').val(combinedDateTime);
+            });
+
+
+            function checkTrainerAvailability() {
+                var serviceId = $('#ServiceId').val();
+                var date = $('#datePickerInput').val(); // GG.AA.YYYY formatında
+                var time = $('#timeInput').val();      // HH:mm formatında
+
+                var trainerSelect = $('#trainerSelect');
+                var trainerGroup = $('#trainerSelectionGroup');
+                var loadingIndicator = $('#loadingIndicator');
+
+                // Seçimler tam değilse alanı gizle ve dur
+                if (!serviceId || !date || !time) {
+                    trainerSelect.empty().append('<option value="">-- Lütfen Önce Hizmet, Tarih ve Saat Seçiniz --</option>');
+                    trainerGroup.hide();
+                    return;
+                }
+
+                // Tarih formatını API için YYYY-MM-DD'ye dönüştür
+                var parts = date.split('.');
+                // Güvenli kontrol: parts.length 3 olmalı.
+                if (parts.length !== 3) {
+                     console.error("Tarih formatı hatalı: " + date);
+                     return;
+                }
+
+                var apiDate = parts[2] + '-' + parts[1] + '-' + parts[0];
+
+                // --- Eğitmen API Çağrısı ---
+
+                loadingIndicator.show();
+                trainerSelect.empty();
+                trainerGroup.show();
+
+                $.ajax({
+                    url: '/api/TrainersApi/available',
+                    type: 'GET',
+                    data: {
+                        date: apiDate,
+                        startTime: time,
+                        // Service Duration'ı Controller'dan çekmek yerine basitleştirilmiş varsayılan süre
+                        duration: 60,
+                        serviceId: serviceId
+                    },
+                    success: function (data) {
+                        loadingIndicator.hide();
+
+                        if (data && data.length > 0) {
+                            // Müsait eğitmenler varsa, listeyi doldur
+                            trainerSelect.append('<option value="">-- Eğitmen Seçiniz --</option>');
+                            $.each(data, function (index, trainer) {
+                                // Trainer nesnesi API'dan gelmeli (TrainerId, Name, SpecialtyText)
+                                trainerSelect.append('<option value="' + trainer.trainerId + '">' + trainer.name + ' (' + trainer.specialtyText + ')</option>');
+                            });
+                        } else {
+                            // Müsait eğitmen yoksa
+                            trainerSelect.append('<option value="">Seçtiğiniz saatte müsait eğitmen bulunamadı.</option>');
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        loadingIndicator.hide();
+                        trainerSelect.empty();
+                        trainerSelect.append('<option value="">Hata: Eğitmenler yüklenemedi.</option>');
+                        console.error("API Hatası:", xhr.responseText);
+                    }
+                });
+            }
+        });
+    </script>
 }

@@ -1,35 +1,46 @@
 ﻿@model IEnumerable<FitnessCenterProject.Models.Trainer>
 
 @{
-    ViewData["Title"] = "Antrenör Listesi";
+    ViewData["Title"] = "Eğitmen Listesi";
 }
 
-<h1>Antrenörler</h1>
+<h1>Eğitmen Listesi</h1>
 
 <p>
-    <a asp-action="Create" class="btn btn-primary">Yeni Antrenör Ekle</a>
+    <a asp-action="Create" class="btn btn-primary">Yeni Eğitmen Ekle</a>
 </p>
 
-<table class="table">
+<table class="table table-striped table-hover">
     <thead>
         <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.Name)
-            </th>
-            <th>İşlemler</th>
+            <th>@Html.DisplayNameFor(model => model.Name)</th>
+            @* 💡 GÜNCELLEME: Specialty kaldırıldı, yerine Hizmetler eklendi *@
+            <th>Sunulan Hizmetler</th>
+            <th></th>
         </tr>
     </thead>
     <tbody>
         @foreach (var item in Model)
         {
             <tr>
+                <td>@Html.DisplayFor(modelItem => item.Name)</td>
+
+                @* 💡 GÜNCELLEME: Eğitmenin sahip olduğu Hizmetleri listele *@
                 <td>
-                    @Html.DisplayFor(modelItem => item.Name)
+                    @if (item.TrainerServices != null && item.TrainerServices.Any())
+                    {
+                        @string.Join(", ", item.TrainerServices.Select(ts => ts.Service.Name))
+                    }
+                    else
+                    {
+                        <span class="text-muted">Hizmet tanımlanmamış.</span>
+                    }
                 </td>
+
                 <td>
-                    <a asp-action="Edit" asp-route-id="@item.TrainerId">Düzenle</a> |
-                    <a asp-action="Details" asp-route-id="@item.TrainerId">Detaylar</a> |
-                    <a asp-action="Delete" asp-route-id="@item.TrainerId">Sil</a>
+                    <a asp-action="Edit" asp-route-id="@item.TrainerId" class="btn btn-sm btn-info">Düzenle</a> |
+                    <a asp-action="Details" asp-route-id="@item.TrainerId" class="btn btn-sm btn-secondary">Detaylar</a> |
+                    <a asp-action="Delete" asp-route-id="@item.TrainerId" class="btn btn-sm btn-danger">Sil</a>
                 </td>
             </tr>
         }

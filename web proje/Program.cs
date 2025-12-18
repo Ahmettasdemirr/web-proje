@@ -16,10 +16,11 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(connectionString));
 
-// --- 2. Identity ve Rol Desteği Servisleri (Standart Yapılandırma) ---
+// --- 2. Identity ve Rol Desteği Servisleri ---
+// Custom ApplicationUser kullanılıyor
 builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
 {
-    // Şifre gereksinimleri
+    // Şifre gereksinimleri (Opsiyonel olarak basitleştirildi)
     options.Password.RequireDigit = false;
     options.Password.RequireLowercase = false;
     options.Password.RequireUppercase = false;
@@ -27,20 +28,22 @@ builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
     options.Password.RequiredLength = 3;
     options.SignIn.RequireConfirmedAccount = false;
 })
-    // Adım 1.1'deki Güncelleme: Rol Desteği Eklendi.
+    // Rol Desteği Eklendi
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>();
 
-// KRİTİK EKLENTİ 1: Yetkilendirme başarısız olursa Login sayfasının yolunu belirtir.
+// Yetkilendirme başarısız olursa Login sayfasının yolunu belirtir.
 builder.Services.ConfigureApplicationCookie(options =>
 {
     options.LoginPath = $"/Identity/Account/Login";
 });
 
+// GEREKLİ EKLEME: HttpClient servisini dependency injection'a ekler.
+builder.Services.AddHttpClient();
+
 
 // --- 3. MVC (Controller ve View) Servisleri ---
-// KRİTİK DEĞİŞİKLİK: Genel yetkilendirme filtresini KALDIRDIK.
-// Artık yetkilendirme, Controller üzerindeki [Authorize] ile yönetilecek.
+// Tüm Controller'lar için varsayılan yetkilendirmeyi kullanıyoruz.
 builder.Services.AddControllersWithViews();
 
 
@@ -56,9 +59,9 @@ using (var scope = app.Services.CreateScope())
     var serviceProvider = scope.ServiceProvider;
     try
     {
-        // NOT: SeedData metodunu InitializeAsync olarak kabul ediyoruz.
-        // Bu kısım, rol ve admin kullanıcısı oluşturulması için kritiktir.
-        FitnessCenterProject.Data.SeedData.InitializeAsync(serviceProvider).Wait();
+        // KRİTİK DÜZELTME: SeedData metod adı "Initialize" olmalı. 
+        // .Wait() ile asenkron işlem senkronize çalıştırılır.
+        FitnessCenterProject.Data.SeedData.Initialize(serviceProvider).Wait();
     }
     catch (Exception ex)
     {

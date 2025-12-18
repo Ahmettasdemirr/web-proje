@@ -1,77 +1,134 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using FitnessCenterProject.Models;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using FitnessCenterProject.Models;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
-using System;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace FitnessCenterProject.Data
 {
     public static class SeedData
     {
-        public static async Task InitializeAsync(IServiceProvider serviceProvider)
+        public static async Task Initialize(IServiceProvider serviceProvider)
         {
-            var context = serviceProvider.GetRequiredService<ApplicationDbContext>();
-            var roleManager = serviceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-            var userManager = serviceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-
-            // Veritabanı Migration'larını uygular (Program.cs'ten buraya taşıdık, daha derli toplu)
-            context.Database.Migrate();
-
-            // 1. ROLLERİ OLUŞTURMA
-            string[] roleNames = { "Admin", "Member" };
-
-            foreach (var roleName in roleNames)
+            using (var context = new ApplicationDbContext(
+                serviceProvider.GetRequiredService<DbContextOptions<ApplicationDbContext>>()))
             {
-                var roleExist = await roleManager.RoleExistsAsync(roleName);
-                if (!roleExist)
+                // Veritabanının oluşturulduğundan emin ol
+                context.Database.EnsureCreated();
+
+                // Rolleri kontrol et ve oluştur
+                var roleManager = serviceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+                if (!await roleManager.RoleExistsAsync("Admin"))
                 {
-                    await roleManager.CreateAsync(new IdentityRole(roleName));
+                    await roleManager.CreateAsync(new IdentityRole("Admin"));
+                }
+                if (!await roleManager.RoleExistsAsync("User"))
+                {
+                    await roleManager.CreateAsync(new IdentityRole("User"));
+                }
+
+                // Admin Kullanıcısını kontrol et ve oluştur
+                var userManager = serviceProvider.GetRequiredService<UserManager<IdentityUser>>();
+                string adminEmail = "admin@fit.com";
+                if (await userManager.FindByEmailAsync(adminEmail) == null)
+                {
+                    var adminUser = new IdentityUser
+                    {
+                        UserName = adminEmail,
+                        Email = adminEmail,
+                        EmailConfirmed = true
+                    };
+                    var result = await userManager.CreateAsync(adminUser, "Admin123!");
+                    if (result.Succeeded)
+                    {
+                        await userManager.AddToRoleAsync(adminUser, "Admin");
+                    }
+                }
+
+                // Normal Kullanıcıyı kontrol et ve oluştur
+                string userEmail = "user@fit.com";
+                if (await userManager.FindByEmailAsync(userEmail) == null)
+                {
+                    var normalUser = new IdentityUser
+                    {
+                        UserName = userEmail,
+                        Email = userEmail,
+                        EmailConfirmed = true
+                    };
+                    var result = await userManager.CreateAsync(normalUser, "User123!");
+                    if (result.Succeeded)
+                    {
+                        await userManager.AddToRoleAsync(normalUser, "User");
+                    }
+                }
+
+                // --- Hizmet Verilerini Ekle ---
+                if (!context.Services.Any())
+                {
+                    var services = new Service[]
+                    {
+                        new Service { Name = "Personal Antrenman", Description = "Kişiye özel 1'e 1 antrenman programı.", DurationMinutes = 60, Price = 150 },
+                        new Service { Name = "Grup Egzersizleri", Description = "10 kişiye kadar küçük grup dersleri.", DurationMinutes = 45, Price = 80 },
+                        new Service { Name = "Pilates", Description = "Mat veya reformer pilates dersleri.", DurationMinutes = 60, Price = 120 },
+                        new Service { Name = "Boks", Description = "Teknik ve kardiyo odaklı boks dersleri.", DurationMinutes = 60, Price = 160 },
+                        new Service { Name = "Diyetisyen Görüşmesi", Description = "Kişiye özel beslenme danışmanlığı.", DurationMinutes = 30, Price = 200 }
+                    };
+                    await context.Services.AddRangeAsync(services);
+                    await context.SaveChangesAsync();
+                }
+
+                var serviceList = await context.Services.ToListAsync();
+                var personalTrainingId = serviceList.FirstOrDefault(s => s.Name == "Personal Antrenman")?.ServiceId ?? 1;
+                var groupExerciseId = serviceList.FirstOrDefault(s => s.Name == "Grup Egzersizleri")?.ServiceId ?? 2;
+                var pilatesId = serviceList.FirstOrDefault(s => s.Name == "Pilates")?.ServiceId ?? 3;
+                var boxingId = serviceList.FirstOrDefault(s => s.Name == "Boks")?.ServiceId ?? 4;
+
+
+                // --- Eğitmen Verilerini Ekle ---
+                if (!context.Trainers.Any())
+                {
+                    var trainers = new Trainer[]
+                    {
+                        // KRİTİK: ImageUrl kaldırıldı.
+                        new Trainer { Name = "Ahmet Taşdemir" },
+                        new Trainer { Name = "Muhammet Yıldız" },
+                        new Trainer { Name = "Ayşe Kaya" }
+                    };
+                    await context.Trainers.AddRangeAsync(trainers);
+                    await context.SaveChangesAsync();
+                }
+
+                var ahmetId = context.Trainers.FirstOrDefault(t => t.Name == "Ahmet Taşdemir")?.TrainerId;
+                var muhammetId = context.Trainers.FirstOrDefault(t => t.Name == "Muhammet Yıldız")?.TrainerId;
+                var ayseId = context.Trainers.FirstOrDefault(t => t.Name == "Ayşe Kaya")?.TrainerId;
+
+
+                // --- Eğitmen-Hizmet İlişkilerini Ekle (TrainerService) ---
+                if (!context.TrainerServices.Any())
+                {
+                    var trainerServices = new List<TrainerService>();
+
+                    if (ahmetId.HasValue)
+                    {
+                        trainerServices.Add(new TrainerService { TrainerId = ahmetId.Value, ServiceId = personalTrainingId });
+                        trainerServices.Add(new TrainerService { TrainerId = ahmetId.Value, ServiceId = boxingId });
+                    }
+                    if (muhammetId.HasValue)
+                    {
+                        trainerServices.Add(new TrainerService { TrainerId = muhammetId.Value, ServiceId = personalTrainingId });
+                        trainerServices.Add(new TrainerService { TrainerId = muhammetId.Value, ServiceId = groupExerciseId });
+                    }
+                    if (ayseId.HasValue)
+                    {
+                        trainerServices.Add(new TrainerService { TrainerId = ayseId.Value, ServiceId = pilatesId });
+                        trainerServices.Add(new TrainerService { TrainerId = ayseId.Value, ServiceId = groupExerciseId });
+                    }
+
+                    await context.TrainerServices.AddRangeAsync(trainerServices);
+                    await context.SaveChangesAsync();
                 }
             }
-
-            // 2. ADMIN KULLANICISINI OLUŞTURMA ve ROLE ATAMA
-            var adminUserEmail = "ogrencinumarasi@sakarya.edu.tr";
-            var adminUser = await userManager.FindByEmailAsync(adminUserEmail);
-
-            if (adminUser == null)
-            {
-                var newAdmin = new ApplicationUser
-                {
-                    UserName = adminUserEmail,
-                    Email = adminUserEmail,
-                    EmailConfirmed = true,
-                    FullName = "Sistem Yöneticisi"
-                };
-
-                var result = await userManager.CreateAsync(newAdmin, "sau");
-
-                if (result.Succeeded)
-                {
-                    await userManager.AddToRoleAsync(newAdmin, "Admin");
-                }
-            }
-
-            // 3. EĞİTMEN VE HİZMET VERİLERİNİ EKLEME (Trainer ve Service)
-            if (!context.Trainers.Any())
-            {
-                context.Trainers.AddRange(
-                    new Trainer { Name = "Ahmet Taşdemir", Specialty = "Kardiyo Uzmanı" },
-                    new Trainer { Name = "Muhammet Ali Çiftçi", Specialty = "Vücut Geliştirme" }
-                );
-            }
-
-            if (!context.Services.Any())
-            {
-                context.Services.AddRange(
-                    new Service { Name = "Personal Antrenman", DurationMinutes = 60, Price = 150 },
-                    new Service { Name = "Diyetisyen Görüşmesi", DurationMinutes = 45, Price = 100 },
-                    new Service { Name = "Boks", DurationMinutes = 60, Price = 120 }
-                );
-            }
-
-            // Değişiklikleri kaydet
-            await context.SaveChangesAsync();
         }
     }
 }

@@ -9,9 +9,18 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - web_proje</title>
+
+    @* --- CSS LİNKLERİ --- *@
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/web_proje.styles.css" asp-append-version="true" />
+
+    @* DATEPICKER CSS LİNKİ *@
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.min.css" />
+
+    @* İKONLAR İÇİN GEREKLİ OLABİLİR (Randevu Formu için eklenmiştir) *@
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
 </head>
 <body>
     <header>
@@ -36,6 +45,11 @@
                             <li class="nav-item">
                                 <a class="nav-link text-dark" asp-area="" asp-controller="Appointment" asp-action="Index">Randevularım</a>
                             </li>
+
+                            @* 💡 YENİ EKLEME: Yapay Zeka Planlama (Giriş yapan herkes görür) *@
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-area="" asp-controller="AI" asp-action="Create">AI Planlayıcı</a>
+                            </li>
                         }
 
                         @* --- YÖNETİCİ MENÜSÜ BAŞLANGIÇ (Sadece Admin rolüne sahip kullanıcılar görür) --- *@
@@ -58,10 +72,14 @@
                                     </li>
                                 </ul>
                             </li>
+
+                            @* 💡 GEREKSİNİM 4 RAPORU: Müsait Eğitmen Raporu (Sadece Admin görür) *@
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-area="" asp-controller="Report" asp-action="AvailableTrainers">API Raporu (Eğitmen)</a>
+                            </li>
                         }
                         @* --- YÖNETİCİ MENÜSÜ SONU --- *@
 
-                        @* NOT: Privacy linkini tekrar ekliyorum *@
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Gizlilik</a>
                         </li>
@@ -85,9 +103,22 @@
             &copy; @DateTime.Now.Year - web_proje - <a asp-area="" asp-controller="Home" asp-action="Privacy">Gizlilik</a>
         </div>
     </footer>
+
+    @*
+    **************************************************
+    JAVASCRIPT KÜTÜPHANELERİ
+    **************************************************
+    *@
+
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
+
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/locales/bootstrap-datepicker.tr.min.js"></script>
+
     <script src="~/js/site.js" asp-append-version="true"></script>
+
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

@@ -1,0 +1,40 @@
+﻿@model FitnessCenterProject.Models.Appointment
+
+@{
+    ViewData["Title"] = "Randevuyu Sil (Yönetici)";
+}
+
+<h1>Randevuyu Sil</h1>
+
+<h3>Bu randevuyu kalıcı olarak silmek istediğinizden emin misiniz?</h3>
+<div class="alert alert-danger" role="alert">
+    Uyarı: Bu işlem geri alınamaz!
+</div>
+
+<div>
+    <h4>Detaylar</h4>
+    <hr />
+    <dl class="row">
+
+        @* Satır 19 uyarısı için düzeltme: Trainer null ise kontrol edilir *@
+        <dt class="col-sm-3">Eğitmen</dt>
+        <dd class="col-sm-9">@(Model.Trainer?.Name ?? "Bilinmiyor")</dd> @* <--- DÜZELTME BURADA *@
+
+        @* Satır 22 uyarısı için düzeltme: Service null ise kontrol edilir *@
+        <dt class="col-sm-3">Hizmet</dt>
+        <dd class="col-sm-9">@(Model.Service?.Name ?? "Bilinmiyor")</dd> @* <--- DÜZELTME BURADA *@
+
+        @* Satır 25 uyarısı için düzeltme: User null ise kontrol edilir *@
+        <dt class="col-sm-3">Kullanıcı E-posta</dt>
+        <dd class="col-sm-9">@(Model.User?.Email ?? Model.UserId ?? "Bilinmiyor")</dd> @* <--- DÜZELTME BURADA *@
+
+        <dt class="col-sm-3">Başlangıç Zamanı</dt>
+        <dd class="col-sm-9">@Model.StartTime.ToString("dd.MM.yyyy HH:mm")</dd>
+    </dl>
+
+    <form asp-action="Delete">
+        <input type="hidden" asp-for="AppointmentId" />
+        <input type="submit" value="Silme İşlemini Onayla" class="btn btn-danger" /> |
+        <a asp-action="Index">Yönetici Listesine Geri Dön</a>
+    </form>
+</div>

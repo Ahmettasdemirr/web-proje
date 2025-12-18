@@ -5,6 +5,8 @@ using FitnessCenterProject.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using System.Security.Claims;
+using System.Globalization;
+using System.Linq;
 
 namespace FitnessCenterProject.Controllers
 {
@@ -18,37 +20,46 @@ namespace FitnessCenterProject.Controllers
             _context = context;
         }
 
-        // ----------------------- READ (Index) - Randevuları Listeleme -----------------------
+        // GET: Randevuları Listeleme
         public async Task<IActionResult> Index()
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (User.IsInRole("Admin"))
+            {
+                return RedirectToAction("Index", "AdminAppointment");
+            }
 
-            // GÜVENLİK İYİLEŞTİRMESİ: Sadece oturum açan kullanıcının randevularını listeliyoruz.
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var appointments = await _context.Appointments
                 .Include(a => a.Trainer)
                 .Include(a => a.Service)
-                .Where(a => a.UserId == userId) // Sadece kullanıcının kendi randevularını getir.
+                .Where(a => a.UserId == userId)
                 .OrderByDescending(a => a.StartTime)
                 .ToListAsync();
 
             return View(appointments);
         }
 
-        // ----------------------- CREATE (Randevu Formu) -----------------------
-        // GET: Appointment/Create
+        // GET: Randevu Oluşturma Formu
         public IActionResult Create()
         {
-            ViewData["TrainerId"] = new SelectList(_context.Trainers, "TrainerId", "Name");
+            // View'de AJAX ile doldurulacağı için TrainerId SelectList'i burada boş bırakılır.
             ViewData["ServiceId"] = new SelectList(_context.Services, "ServiceId", "Name");
             return View();
         }
 
+        // POST: Randevu Oluşturma (Kullanıcı Eğitmeni Kendisi Seçer)
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("TrainerId,ServiceId,StartTime,EndTime,Notes")] Appointment appointment)
+        public async Task<IActionResult> Create([Bind("ServiceId,TrainerId,Notes")] Appointment appointment, [FromForm] string StartTime)
         {
-            ViewData["TrainerId"] = new SelectList(_context.Trainers, "TrainerId", "Name", appointment.TrainerId);
+            // View için SelectList'i doldur
             ViewData["ServiceId"] = new SelectList(_context.Services, "ServiceId", "Name", appointment.ServiceId);
+
+            // TrainerId'nin seçili olduğundan emin ol
+            if (appointment.TrainerId == 0)
+            {
+                ModelState.AddModelError("TrainerId", "Lütfen müsait eğitmen listesinden bir seçim yapınız.");
+            }
 
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId))
@@ -56,179 +67,218 @@ namespace FitnessCenterProject.Controllers
                 ModelState.AddModelError(string.Empty, "Randevu oluşturmak için oturum açmalısınız.");
                 return View(appointment);
             }
-            appointment.UserId = userId;
-            appointment.IsConfirmed = false;
 
-            // 1. ADIM: GENEL MODEL DOĞRULAMASI
-            if (!ModelState.IsValid)
+            // StartTime string'ini DateTime nesnesine dönüştürme
+            DateTime parsedStartTime;
+            if (!DateTime.TryParseExact(StartTime, "dd.MM.yyyy HH:mm", CultureInfo.GetCultureInfo("tr-TR"), DateTimeStyles.None, out parsedStartTime))
             {
+                ModelState.AddModelError("StartTime", "Geçerli bir tarih ve saat formatı giriniz (Örn: 18.12.2025 14:30).");
                 return View(appointment);
             }
 
-            // 2. ADIM: MANTIKSAL KONTROLLER VE ÇAKIŞMA KONTROLÜ
+            appointment.StartTime = parsedStartTime;
+
+            // EndTime'ı hesapla
+            var service = await _context.Services.FindAsync(appointment.ServiceId);
+            if (service == null)
+            {
+                ModelState.AddModelError("ServiceId", "Seçilen hizmet bulunamadı.");
+                return View(appointment);
+            }
+            appointment.EndTime = appointment.StartTime.AddMinutes(service.DurationMinutes);
+
+            // Mantıksal Kontroller
             if (appointment.StartTime <= DateTime.Now)
             {
                 ModelState.AddModelError("StartTime", "Randevu başlangıç zamanı geçmiş bir tarih/saat olamaz.");
-                return View(appointment);
             }
 
-            if (appointment.StartTime >= appointment.EndTime)
+            if (ModelState.IsValid)
             {
-                ModelState.AddModelError("EndTime", "Bitiş zamanı başlangıç zamanından sonra olmalıdır.");
-                return View(appointment);
-            }
+                // --- KRİTİK: Kullanıcının Seçtiği Eğitmen Müsait mi Kontrolü ---
 
-            // Eğitmen Çakışma Kontrolü
-            var isConflicting = await _context.Appointments
-                .AnyAsync(a =>
-                    a.TrainerId == appointment.TrainerId &&
-                    (
-                        (appointment.StartTime < a.EndTime && appointment.StartTime >= a.StartTime) ||
-                        (appointment.EndTime > a.StartTime && appointment.EndTime <= a.EndTime) ||
-                        (appointment.StartTime <= a.StartTime && appointment.EndTime >= a.EndTime)
-                    ));
+                var trainer = await _context.Trainers
+                    .Include(t => t.Appointments)
+                    .Include(t => t.TrainerServices)
+                    .FirstOrDefaultAsync(t => t.TrainerId == appointment.TrainerId);
 
-            if (isConflicting)
-            {
-                ModelState.AddModelError(string.Empty, "Seçilen eğitmenin bu saatler arasında başka bir randevusu bulunmaktadır. Lütfen farklı bir saat seçiniz.");
-                return View(appointment);
-            }
-
-            // 3. ADIM: KAYIT
-            try
-            {
-                _context.Add(appointment);
-                await _context.SaveChangesAsync();
-
-                TempData["SuccessMessage"] = "Randevunuz başarıyla oluşturuldu!";
-                return RedirectToAction(nameof(Index), "Appointment");
-            }
-            catch (DbUpdateException dbEx)
-            {
-                string errorMessage = "Randevu kaydedilirken bir veritabanı kısıtlama hatası oluştu.";
-                if (dbEx.InnerException != null)
+                if (trainer == null || !trainer.TrainerServices.Any(ts => ts.ServiceId == appointment.ServiceId))
                 {
-                    errorMessage += " Detay: " + dbEx.InnerException.Message;
+                    ModelState.AddModelError("TrainerId", "Seçilen eğitmen bu hizmeti vermeye uygun değil.");
+                    return View(appointment);
                 }
-                ModelState.AddModelError(string.Empty, errorMessage);
-                return View(appointment);
+
+                // Müsaitlik Kontrolü
+                bool isConflicting = trainer.Appointments.Any(a =>
+                    (appointment.StartTime < a.EndTime && appointment.StartTime >= a.StartTime) ||
+                    (appointment.EndTime > a.StartTime && appointment.EndTime <= a.EndTime) ||
+                    (appointment.StartTime <= a.StartTime && appointment.EndTime >= a.EndTime));
+
+                if (isConflicting)
+                {
+                    ModelState.AddModelError("TrainerId", $"{trainer.Name} bu saat aralığında maalesef müsait değil. Lütfen listeden başka bir eğitmen seçin.");
+                    goto SkipSave; // Hata durumunda kayıt işlemini atla
+                }
+
+                // Kayıt İşlemi
+                appointment.UserId = userId;
+                appointment.IsConfirmed = false; // İlk randevu yönetici onayı gerektirir.
+
+                try
+                {
+                    _context.Add(appointment);
+                    await _context.SaveChangesAsync();
+                    TempData["SuccessMessage"] = $"{trainer.Name} adlı eğitmene başarılı randevu atandı ve yönetici onayına sunuldu!";
+                    return RedirectToAction(nameof(Index), "Appointment");
+                }
+                catch (Exception ex)
+                {
+                    ModelState.AddModelError(string.Empty, "Beklenmedik bir hata oluştu: " + ex.Message);
+                    goto SkipSave;
+                }
             }
-            catch (Exception ex)
-            {
-                ModelState.AddModelError(string.Empty, "Beklenmedik bir hata oluştu: " + ex.Message);
-                return View(appointment);
-            }
+
+        SkipSave:
+            // Model geçerli değilse veya atama başarısız olursa
+            return View(appointment);
         }
 
-        // ====================================================================
-        // YENİ EKLENEN KOD: DÜZENLEME (EDIT)
-        // ====================================================================
-
-        // ----------------------- UPDATE (Düzenleme Formu) -----------------------
-        // GET: Appointment/Edit/5
+        // GET: Randevu Düzenleme Formu
         public async Task<IActionResult> Edit(int? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
+            if (id == null) return NotFound();
 
-            var appointment = await _context.Appointments.FindAsync(id);
+            var appointment = await _context.Appointments
+                .Include(a => a.Trainer)
+                .Include(a => a.Service)
+                .FirstOrDefaultAsync(m => m.AppointmentId == id);
 
-            if (appointment == null)
-            {
-                return NotFound();
-            }
+            if (appointment == null) return NotFound();
 
-            // YETKİLENDİRME KONTROLÜ: Sadece randevuyu oluşturan kişi düzenleyebilir
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (appointment.UserId != userId)
-            {
-                return Forbid(); // 403 Forbidden
-            }
+            if (appointment.UserId != userId) return Forbid();
 
-            ViewData["TrainerId"] = new SelectList(_context.Trainers, "TrainerId", "Name", appointment.TrainerId);
+            // Edit View'de de Trainer seçimi AJAX ile yapılacak
             ViewData["ServiceId"] = new SelectList(_context.Services, "ServiceId", "Name", appointment.ServiceId);
 
             return View(appointment);
         }
 
-        // ----------------------- UPDATE (Değişiklikleri Kaydetme) -----------------------
-        // POST: Appointment/Edit/5
+        // POST: Randevuyu Kaydetme (Düzenlemede Kullanıcının Seçtiği Eğitmenin Müsaitliği Kontrol Edilir)
+        // POST: Randevuyu Kaydetme (Düzenlemede Kullanıcının Seçtiği Eğitmenin Müsaitliği Kontrol Edilir)
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("AppointmentId,TrainerId,ServiceId,StartTime,EndTime,Notes,UserId,IsConfirmed")] Appointment appointment)
+        public async Task<IActionResult> Edit(int id, [Bind("AppointmentId,ServiceId,TrainerId,Notes")] Appointment appointment, [FromForm] string StartTime)
         {
-            if (id != appointment.AppointmentId)
-            {
-                return NotFound();
-            }
+            if (id != appointment.AppointmentId) return NotFound();
 
-            // Kullanıcının UserId'sini kontrol etme (Güvenlik Önlemi)
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (appointment.UserId != userId)
-            {
-                return Forbid();
-            }
 
-            // Randevunun UserId'sini URL'den gelen ID'ye eşitleyelim (Bind'den geliyor)
+            // Mevcut randevuyu SADECE OKUMAK ve takip mekanizmasını bozmamak için AsNoTracking() kullanıyoruz.
             var existingAppointment = await _context.Appointments.AsNoTracking().FirstOrDefaultAsync(a => a.AppointmentId == id);
-            if (existingAppointment == null || existingAppointment.UserId != userId)
-            {
-                // Eğer randevu yoksa veya kullanıcıya ait değilse, bu bir güvenlik ihlalidir.
-                return Forbid();
-            }
-            appointment.UserId = existingAppointment.UserId; // Mevcut kullanıcı ID'sini koru
 
-            if (!ModelState.IsValid)
+            if (existingAppointment == null || existingAppointment.UserId != userId) return Forbid();
+
+            // View için SelectList'i doldur (Hata olsa bile geri dönebilmek için)
+            ViewData["ServiceId"] = new SelectList(_context.Services, "ServiceId", "Name", appointment.ServiceId);
+
+            // --- StartTime Dönüşümü ve Hesaplama ---
+            DateTime parsedStartTime;
+            if (!DateTime.TryParseExact(StartTime, "dd.MM.yyyy HH:mm", CultureInfo.GetCultureInfo("tr-TR"), DateTimeStyles.None, out parsedStartTime))
             {
-                // Hata varsa View'a geri dönmeden önce dropdown listelerini tekrar doldur
-                ViewData["TrainerId"] = new SelectList(_context.Trainers, "TrainerId", "Name", appointment.TrainerId);
-                ViewData["ServiceId"] = new SelectList(_context.Services, "ServiceId", "Name", appointment.ServiceId);
+                ModelState.AddModelError("StartTime", "Geçerli bir tarih ve saat formatı giriniz (Örn: 18.12.2025 14:30).");
                 return View(appointment);
             }
 
-            // MANTIKSAL KONTROLLER
+            appointment.StartTime = parsedStartTime;
+
+            var service = await _context.Services.FindAsync(appointment.ServiceId);
+            if (service == null)
+            {
+                ModelState.AddModelError("ServiceId", "Seçilen hizmet bulunamadı.");
+                return View(appointment);
+            }
+            appointment.EndTime = appointment.StartTime.AddMinutes(service.DurationMinutes);
+
+            // Mantıksal Kontrol
             if (appointment.StartTime <= DateTime.Now)
             {
                 ModelState.AddModelError("StartTime", "Randevu başlangıç zamanı geçmiş bir tarih/saat olamaz.");
             }
 
-            if (appointment.StartTime >= appointment.EndTime)
+            // Eğer eğitmen seçilmemişse, mevcut eğitmeni kullan (sadece Notlar değiştiğinde)
+            if (appointment.TrainerId == 0)
             {
-                ModelState.AddModelError("EndTime", "Bitiş zamanı başlangıç zamanından sonra olmalıdır.");
+                appointment.TrainerId = existingAppointment.TrainerId;
+            }
+            // Hata kontrolü (hala sıfırsa hata ver)
+            if (appointment.TrainerId == 0)
+            {
+                ModelState.AddModelError("TrainerId", "Lütfen müsait eğitmen listesinden bir seçim yapınız.");
             }
 
-            // Eğitmen Çakışma Kontrolü (Düzenlenen randevuyu hariç tutarak)
-            var isConflicting = await _context.Appointments
-                .AnyAsync(a =>
-                    a.AppointmentId != id && // DÜZENLENEN randevuyu kontrol dışı bırak
-                    a.TrainerId == appointment.TrainerId &&
-                    (
-                        (appointment.StartTime < a.EndTime && appointment.StartTime >= a.StartTime) ||
-                        (appointment.EndTime > a.StartTime && appointment.EndTime <= a.EndTime) ||
-                        (appointment.StartTime <= a.StartTime && appointment.EndTime >= a.EndTime)
-                    ));
+            // Model geçerli değilse, hemen geri dön
+            if (!ModelState.IsValid)
+            {
+                return View(appointment);
+            }
+
+            // KRİTİK ALANLARDA DEĞİŞİKLİK KONTROLÜ
+            bool timeOrServiceOrTrainerChanged =
+                appointment.ServiceId != existingAppointment.ServiceId ||
+                appointment.StartTime != existingAppointment.StartTime ||
+                appointment.TrainerId != existingAppointment.TrainerId;
+
+            // --- Müsaitlik Kontrolü ---
+            // TRAINER ÇEKİMİNDE DE ASNOTRACKING KULLANILDI
+            var trainer = await _context.Trainers
+                .Include(t => t.Appointments)
+                .AsNoTracking() // Takip hatasını önlemek için burada da ekledik
+                .FirstOrDefaultAsync(t => t.TrainerId == appointment.TrainerId);
+
+            // CS8602 Düzeltmesi (Eğitmen bulunamazsa)
+            if (trainer == null)
+            {
+                ModelState.AddModelError("TrainerId", "Seçilen eğitmen bulunamadı.");
+                return View(appointment);
+            }
+
+            bool isConflicting = trainer.Appointments.Any(a =>
+                a.AppointmentId != appointment.AppointmentId && // Kendisini hariç tut
+                ((appointment.StartTime < a.EndTime && appointment.StartTime >= a.StartTime) ||
+                (appointment.EndTime > a.StartTime && appointment.EndTime <= a.EndTime) ||
+                (appointment.StartTime <= a.StartTime && appointment.EndTime >= a.EndTime)));
 
             if (isConflicting)
             {
-                ModelState.AddModelError(string.Empty, "Seçilen eğitmenin bu saatler arasında başka bir randevusu bulunmaktadır. Lütfen farklı bir saat seçiniz.");
+                ModelState.AddModelError("TrainerId", $"{trainer.Name} bu saat aralığında maalesef müsait değil. Lütfen listeden başka bir eğitmen seçin.");
+                return View(appointment);
             }
 
-            if (!ModelState.IsValid)
+            // --- Güncelleme ve Onay Yönetimi ---
+
+            // Kullanıcı ID'si ve eski onay durumu korunur.
+            appointment.UserId = existingAppointment.UserId;
+            appointment.IsConfirmed = existingAppointment.IsConfirmed;
+
+            // Değişiklik olduysa onayı sıfırla
+            if (timeOrServiceOrTrainerChanged)
             {
-                ViewData["TrainerId"] = new SelectList(_context.Trainers, "TrainerId", "Name", appointment.TrainerId);
-                ViewData["ServiceId"] = new SelectList(_context.Services, "ServiceId", "Name", appointment.ServiceId);
-                return View(appointment);
+                appointment.IsConfirmed = false;
+                TempData["WarningMessage"] = $"Randevunuzun bilgileri değiştirildiği için **yönetici onayı tekrar gerekmektedir!**";
             }
 
             // Kayıt İşlemi
             try
             {
+                // HATA ÇÖZÜMÜ BURADA: _context.Update() metodu, takipsiz nesneyi Modified olarak işaretler.
                 _context.Update(appointment);
                 await _context.SaveChangesAsync();
 
-                TempData["SuccessMessage"] = "Randevunuz başarıyla güncellendi!";
+                if (TempData["WarningMessage"] == null)
+                {
+                    TempData["SuccessMessage"] = "Randevunuz başarıyla güncellendi!";
+                }
             }
             catch (DbUpdateConcurrencyException)
             {
@@ -241,73 +291,46 @@ namespace FitnessCenterProject.Controllers
                     throw;
                 }
             }
+            // Başarılıysa Index'e yönlendir
             return RedirectToAction(nameof(Index));
         }
 
-        // ----------------------- READ (Detaylar) -----------------------
-        // GET: Appointment/Details/5
+        // --- Detaylar ve Silme action'ları ---
+
         public async Task<IActionResult> Details(int? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var appointment = await _context.Appointments
-                .Include(a => a.Trainer) // Eğitmen detaylarını yükle
-                .Include(a => a.Service) // Hizmet detaylarını yükle
-                .FirstOrDefaultAsync(m => m.AppointmentId == id);
-
-            if (appointment == null)
-            {
-                return NotFound();
-            }
-
-            // YETKİLENDİRME KONTROLÜ: Sadece randevuyu oluşturan kişi görebilir
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (appointment.UserId != userId)
-            {
-                return Forbid();
-            }
-
-            return View(appointment);
-        }
-
-        // ====================================================================
-        // YENİ EKLENEN KOD: SİLME (DELETE)
-        // ====================================================================
-
-        // ----------------------- DELETE (Onay Formu) -----------------------
-        // GET: Appointment/Delete/5
-        public async Task<IActionResult> Delete(int? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
+            if (id == null) return NotFound();
 
             var appointment = await _context.Appointments
                 .Include(a => a.Trainer)
                 .Include(a => a.Service)
                 .FirstOrDefaultAsync(m => m.AppointmentId == id);
 
-            if (appointment == null)
-            {
-                return NotFound();
-            }
+            if (appointment == null) return NotFound();
 
-            // YETKİLENDİRME KONTROLÜ
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (appointment.UserId != userId)
-            {
-                return Forbid();
-            }
+            if (appointment.UserId != userId && !User.IsInRole("Admin")) return Forbid();
 
             return View(appointment);
         }
 
-        // ----------------------- DELETE (Silme İşlemi) -----------------------
-        // POST: Appointment/Delete/5
+        public async Task<IActionResult> Delete(int? id)
+        {
+            if (id == null) return NotFound();
+
+            var appointment = await _context.Appointments
+                .Include(a => a.Trainer)
+                .Include(a => a.Service)
+                .FirstOrDefaultAsync(m => m.AppointmentId == id);
+
+            if (appointment == null) return NotFound();
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (appointment.UserId != userId && !User.IsInRole("Admin")) return Forbid();
+
+            return View(appointment);
+        }
+
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
@@ -316,19 +339,15 @@ namespace FitnessCenterProject.Controllers
 
             if (appointment != null)
             {
-                // YETKİLENDİRME KONTROLÜ
                 var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                if (appointment.UserId != userId)
-                {
-                    return Forbid();
-                }
+                if (appointment.UserId != userId && !User.IsInRole("Admin")) return Forbid();
 
                 _context.Appointments.Remove(appointment);
                 await _context.SaveChangesAsync();
                 TempData["SuccessMessage"] = "Randevunuz başarıyla iptal edildi!";
             }
 
-            return RedirectToAction(nameof(Index));
+            return User.IsInRole("Admin") ? RedirectToAction("Index", "AdminAppointment") : RedirectToAction(nameof(Index));
         }
     }
 }

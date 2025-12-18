@@ -13,11 +13,13 @@ namespace FitnessCenterProject.Models
         [StringLength(100)]
         public string Name { get; set; } = string.Empty;
 
-        // YENİ EKLENEN ÖZELLİK: Specialty (Uzmanlık alanı)
-        [StringLength(100)]
-        public string Specialty { get; set; } = string.Empty;
+        // 💡 KALDIRILDI/YORUMLANDI: Specialty alanı kaldırıldı/yorumlandı.
+        // Artık eğitmenin uzmanlığı, TrainerServices koleksiyonu üzerinden Service tablosundan çekilecektir.
+        // [StringLength(100)] 
+        // public string Specialty { get; set; } = string.Empty; 
 
         // Gezinim Özellikleri (Diğer tablolara bağlantılar)
+        // TrainerService koleksiyonu Trainer ile Service arasında köprü kuracaktır.
         public ICollection<TrainerSpecialization> TrainerSpecializations { get; set; } = new List<TrainerSpecialization>();
         public ICollection<TrainerService> TrainerServices { get; set; } = new List<TrainerService>();
         public ICollection<Appointment> Appointments { get; set; } = new List<Appointment>();

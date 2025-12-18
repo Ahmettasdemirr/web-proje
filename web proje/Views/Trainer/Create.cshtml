@@ -1,38 +1,58 @@
 ﻿@model FitnessCenterProject.Models.Trainer
 
 @{
-    ViewData["Title"] = "Yeni Antrenör Oluştur";
+    ViewData["Title"] = "Yeni Eğitmen Ekle";
 }
 
-<h1>Yeni Antrenör</h1>
-
+<h1>Yeni Eğitmen Ekle</h1>
 <hr />
+
 <div class="row">
-    <div class="col-md-4">
+    <div class="col-md-6">
         <form asp-action="Create">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
-            <div class="form-group">
+            <div class="form-group mb-3">
                 <label asp-for="Name" class="control-label"></label>
                 <input asp-for="Name" class="form-control" />
                 <span asp-validation-for="Name" class="text-danger"></span>
             </div>
-            <br />
+
+            @* 💡 YENİ ALAN: Eğitmenin Sunabileceği Hizmetlerin Seçimi *@
+            <div class="form-group mb-4">
+                <label class="control-label">Sunabileceği Hizmetler</label>
+                <div class="border p-3" style="max-height: 250px; overflow-y: auto;">
+                    @if (ViewBag.Services != null)
+                    {
+                        @foreach (var service in ViewBag.Services)
+                        {
+                            <div class="form-check">
+                                @* name="selectedServiceIds" Controller'daki parametre ile eşleşir *@
+                                <input class="form-check-input" type="checkbox" name="selectedServiceIds" value="@service.ServiceId" id="service_@service.ServiceId">
+                                <label class="form-check-label" for="service_@service.ServiceId">
+                                    @service.Name (@service.Price.ToString("C"))
+                                </label>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <p class="text-danger">Hizmetler yüklenemedi.</p>
+                    }
+                </div>
+                <small class="text-muted">Eğitmenin sunacağı tüm hizmetleri işaretleyin.</small>
+            </div>
+
             <div class="form-group">
-                <input type="submit" value="Oluştur" class="btn btn-primary" />
+                <input type="submit" value="Ekle" class="btn btn-success" />
+                <a asp-action="Index" class="btn btn-secondary">İptal</a>
             </div>
         </form>
     </div>
 </div>
 
-<hr />
-<div>
-    <a asp-action="Index">Antrenör Listesine Geri Dön</a>
-</div>
-
 @section Scripts {
     @{
-        // İstemci tarafı (Client-side) doğrulama scriptlerini yükler
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
 }

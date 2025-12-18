@@ -1,50 +1,72 @@
 ﻿@model FitnessCenterProject.Models.Appointment
+@using System.Globalization;
 
 @{
     ViewData["Title"] = "Randevu Düzenle";
+
+    // Controller'ın beklediği format için mevcut tarihi yyyy-MM-dd'ye çevir
+    var existingDate = Model.StartTime.ToString("yyyy-MM-dd");
+    var existingTime = Model.StartTime.ToString("HH:mm");
 }
 
 <h1>Randevu Düzenle</h1>
-<h4>@Model.StartTime.ToShortDateString() Tarihli Randevu</h4>
+<h4>@Model.StartTime.ToString("dd MMMM yyyy HH:mm") Randevusu</h4>
 
 <hr />
 <div class="row">
-    <div class="col-md-4">
+    <div class="col-md-6">
         <form asp-action="Edit">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
-            {{-- Randevunun ID'si (Gizli tutulmalı) --}}
             <input type="hidden" asp-for="AppointmentId" />
-
-            {{-- Kullanıcı ID'si ve Onay Durumu (Gizli tutulmalı, Controller'da kontrol ediliyor) --}}
             <input type="hidden" asp-for="UserId" />
             <input type="hidden" asp-for="IsConfirmed" />
 
-            <div class="form-group">
-                <label asp-for="TrainerId" class="control-label">Eğitmen</label>
-                <select asp-for="TrainerId" class="form-control" asp-items="ViewBag.TrainerId"></select>
-                <span asp-validation-for="TrainerId" class="text-danger"></span>
-            </div>
+            @* KRİTİK: Controller'a gönderilecek birleştirilmiş StartTime değeri için gizli alan *@
+            <input name="StartTime" type="hidden" id="hiddenStartTime" />
 
-            <div class="form-group">
+            @* ❌ TrainerId alanı kaldırıldı. *@
+
+            <div class="form-group mb-3">
                 <label asp-for="ServiceId" class="control-label">Hizmet</label>
-                <select asp-for="ServiceId" class="form-control" asp-items="ViewBag.ServiceId"></select>
+
+                <select asp-for="ServiceId" class="form-control">
+                    @* KRİTİK DÜZELTME: Null kontrolü (CS8600/CS8602 çözümü) *@
+                    @{
+                        var serviceList = ViewData["ServiceId"] as SelectList;
+                    }
+
+                    @if (serviceList != null)
+                    {
+                        @foreach (var item in serviceList)
+                        {
+                            // Mevcut ServiceId ile eşleşen öğeyi seçili (selected) yap
+                            bool isSelected = item.Value == Model.ServiceId.ToString();
+                            <option value="@item.Value" selected="@isSelected">@item.Text</option>
+                        }
+                    }
+                    else
+                    {
+                        <option value="">Hizmetler yüklenemedi.</option>
+                    }
+                </select>
+
                 <span asp-validation-for="ServiceId" class="text-danger"></span>
             </div>
 
-            <div class="form-group">
-                <label asp-for="StartTime" class="control-label">Başlangıç Zamanı</label>
-                <input asp-for="StartTime" class="form-control" type="datetime-local" />
-                <span asp-validation-for="StartTime" class="text-danger"></span>
+            <div class="form-group mb-3">
+                <label for="dateInput" class="control-label">Tarih Seçiniz</label>
+                <input id="dateInput" class="form-control" type="date"
+                       value="@existingDate"
+                       min="@DateTime.Now.ToString("yyyy-MM-dd")" />
             </div>
 
-            <div class="form-group">
-                <label asp-for="EndTime" class="control-label">Bitiş Zamanı</label>
-                <input asp-for="EndTime" class="form-control" type="datetime-local" />
-                <span asp-validation-for="EndTime" class="text-danger"></span>
+            <div class="form-group mb-3">
+                <label for="timeInput" class="control-label">Saat Seçiniz</label>
+                <input id="timeInput" class="form-control" type="time" value="@existingTime" />
             </div>
 
-            <div class="form-group">
+            <div class="form-group mb-3">
                 <label asp-for="Notes" class="control-label">Notlar</label>
                 <textarea asp-for="Notes" class="form-control"></textarea>
                 <span asp-validation-for="Notes" class="text-danger"></span>
@@ -52,6 +74,7 @@
 
             <div class="form-group mt-3">
                 <input type="submit" value="Kaydet" class="btn btn-primary" />
+                <a asp-action="Index" class="btn btn-secondary">İptal</a>
             </div>
         </form>
     </div>
@@ -65,4 +88,37 @@
     @{
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
+
+    <script>
+        $(document).ready(function () {
+            // Tarih ve saat inputlarındaki değişiklikleri dinle
+            $('#dateInput, #timeInput').on('change', updateHiddenStartTime);
+
+            // Form gönderildiğinde gizli alanı güncelle
+            $('form').on('submit', function (e) {
+                updateHiddenStartTime();
+            });
+
+            // Sayfa yüklendiğinde Controller'ın beklediği formatı oluştur ve gizli alana yaz
+            updateHiddenStartTime();
+
+            function updateHiddenStartTime() {
+                var datePart = $('#dateInput').val(); // YYYY-MM-DD
+                var timePart = $('#timeInput').val(); // HH:mm
+
+                if (datePart && timePart) {
+                    // TR formatına dönüştürme: dd.MM.yyyy HH:mm
+                    var parts = datePart.split('-');
+                    var formattedDate = parts[2] + '.' + parts[1] + '.' + parts[0];
+
+                    var combinedDateTime = formattedDate + ' ' + timePart;
+
+                    // Controller'ın yakalayacağı gizli inputu güncelle
+                    $('#hiddenStartTime').val(combinedDateTime);
+                } else {
+                    $('#hiddenStartTime').val("");
+                }
+            }
+        });
+    </script>
 }

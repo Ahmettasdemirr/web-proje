@@ -1,0 +1,43 @@
+﻿@model FitnessCenterProject.Models.Appointment
+
+@{
+    ViewData["Title"] = "Randevu Detayları (Yönetici)";
+}
+
+<h1>Randevu Detayları</h1>
+
+<div>
+    <h4>ID: @Model.AppointmentId</h4>
+    <hr />
+    <dl class="row">
+
+        @* Satır 14 uyarısı için düzeltme: Trainer null ise boş bırakır *@
+        <dt class="col-sm-3">Eğitmen</dt>
+        <dd class="col-sm-9">@(Model.Trainer?.Name ?? "Bilinmiyor")</dd> @* <--- DÜZELTME BURADA *@
+
+        @* Satır 17 uyarısı için düzeltme: Service null ise boş bırakır *@
+        <dt class="col-sm-3">Hizmet</dt>
+        <dd class="col-sm-9">@(Model.Service?.Name ?? "Bilinmiyor")</dd> @* <--- DÜZELTME BURADA *@
+
+        @* Satır 20 uyarısı için düzeltme: User null ise UserId'yi gösterir *@
+        <dt class="col-sm-3">Kullanıcı E-posta</dt>
+        <dd class="col-sm-9">@(Model.User?.Email ?? Model.UserId ?? "Bilinmiyor")</dd> @* <--- DÜZELTME BURADA *@
+
+        <dt class="col-sm-3">Başlangıç Zamanı</dt>
+        <dd class="col-sm-9">@Model.StartTime.ToString("dd.MM.yyyy HH:mm")</dd>
+
+        <dt class="col-sm-3">Bitiş Zamanı</dt>
+        <dd class="col-sm-9">@Model.EndTime.ToString("dd.MM.yyyy HH:mm")</dd>
+
+        <dt class="col-sm-3">Notlar</dt>
+        <dd class="col-sm-9">@Html.DisplayFor(model => model.Notes)</dd>
+
+        <dt class="col-sm-3">Onay Durumu</dt>
+        <dd class="col-sm-9">
+            @(Model.IsConfirmed ? "✅ Onaylandı" : "❌ Beklemede")
+        </dd>
+    </dl>
+</div>
+<div>
+    <a asp-action="Index">Yönetici Listesine Geri Dön</a>
+</div>

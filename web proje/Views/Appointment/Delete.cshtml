@@ -15,14 +15,14 @@
             Eğitmen
         </dt>
         <dd class="col-sm-9">
-            {{-- GÜVENLİK KONTROLÜ: Trainer null değilse Adını göster --}}
+            
             @(Model.Trainer != null ? Model.Trainer.Name : "Bilinmiyor")
         </dd>
         <dt class="col-sm-3">
             Hizmet
         </dt>
         <dd class="col-sm-9">
-            {{-- GÜVENLİK KONTROLÜ: Service null değilse Adını göster --}}
+            
             @(Model.Service != null ? Model.Service.Name : "Bilinmiyor")
         </dd>
         <dt class="col-sm-3">

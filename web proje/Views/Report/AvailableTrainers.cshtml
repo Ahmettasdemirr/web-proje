@@ -1,0 +1,68 @@
+﻿@model IEnumerable<FitnessCenterProject.Models.TrainerApiResult>
+
+@{
+    ViewData["Title"] = "Müsait Eğitmen Raporu (API Çıktısı)";
+}
+
+<h1>Müsait Eğitmenler Raporu</h1>
+<p class="text-muted">Bu rapor, projenizin REST API'si üzerinden veri çekilerek oluşturulmuştur.</p>
+<hr />
+
+<div class="alert alert-info">
+    <form asp-action="AvailableTrainers" method="get" class="row g-3 align-items-end">
+        <div class="col-md-3">
+            <label for="date" class="form-label">Tarih</label>
+            <input type="date" name="date" id="date" class="form-control" value="@ViewBag.Date" required />
+        </div>
+        <div class="col-md-3">
+            <label for="startTime" class="form-label">Saat</label>
+            <input type="time" name="startTime" id="startTime" class="form-control" value="@ViewBag.StartTime" required />
+        </div>
+        <div class="col-md-3">
+            <label for="duration" class="form-label">Süre (Dk)</label>
+            <input type="number" name="duration" id="duration" class="form-control" value="@ViewBag.Duration" min="15" max="180" required />
+        </div>
+        <div class="col-md-3">
+            <button type="submit" class="btn btn-success w-100">Sorgula</button>
+        </div>
+    </form>
+</div>
+
+@if (ViewBag.ErrorMessage != null)
+{
+    <div class="alert alert-danger">
+        <strong>Hata:</strong> @ViewBag.ErrorMessage
+        <br />
+        <small>Kontrol Edilen API Adresi: @ViewBag.ApiUrl</small>
+    </div>
+}
+else if (!Model.Any())
+{
+    <div class="alert alert-warning">
+        Belirtilen tarih ve saat aralığında müsait eğitmen bulunamadı. Lütfen farklı bir saat deneyiniz.
+    </div>
+}
+else
+{
+    <table class="table table-striped table-hover mt-4">
+        <thead>
+            <tr>
+                <th>Eğitmen Adı</th>
+                <th>Uzmanlık Alanı</th>
+                <th>Müsaitlik Zamanı</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td>@item.Name</td>
+                    <td>@item.Specialty</td>
+                    <td>@item.Availability</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+<p class="mt-4 text-muted">API sorgusu: <code>@ViewBag.ApiUrl</code></p>
