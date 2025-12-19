@@ -271,7 +271,6 @@ namespace FitnessCenterProject.Controllers
             // Kayıt İşlemi
             try
             {
-                // HATA ÇÖZÜMÜ BURADA: _context.Update() metodu, takipsiz nesneyi Modified olarak işaretler.
                 _context.Update(appointment);
                 await _context.SaveChangesAsync();
 
