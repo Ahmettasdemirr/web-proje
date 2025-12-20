@@ -2,82 +2,128 @@
 
 @{
     ViewData["Title"] = "Randevu Yönetim Paneli";
+    Layout = "~/Views/Shared/_Layout.cshtml"; // Layout kullanımı varsayılır
 }
 
-<h1>Randevu Yönetim Paneli</h1>
-<p>Tüm randevuları buradan yönetebilir, onaylayabilir veya silebilirsiniz.</p>
-<hr />
+<div class="container py-5">
 
-<table class="table table-striped">
-    <thead>
-        <tr>
-            <th>ID</th>
-            <th>Durum</th>
-            <th>Eğitmen</th>
-            <th>Hizmet</th>
-            <th>Başlangıç Zamanı</th>
-            <th>Kullanıcı (E-posta)</th>
-            <th>İşlemler</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var item in Model)
-        {
-            // Duruma göre satır rengi belirle: Onaylı=Yeşil, Beklemede=Sarı, Geçmiş ve Onaylanmamış=Kırmızı
-            string rowClass = item.IsConfirmed ? "table-success" : (item.StartTime < DateTime.Now && !item.IsConfirmed ? "table-danger" : "table-warning");
+    <div class="card bg-dark text-white shadow mb-5">
+        <div class="card-body">
+            <h1 class="card-title text-primary mb-2">
+                <i class="fas fa-calendar-check me-2"></i> @ViewData["Title"]
+            </h1>
+            <p class="card-text text-secondary">
+                Tüm üye randevularını buradan inceleyebilir, bekleyen randevuları onaylayabilir veya yönetebilirsiniz.
+            </p>
+            <hr class="border-secondary" />
 
-            <tr class="@rowClass">
-                <td>@item.AppointmentId</td>
-                <td>
-                    @if (item.IsConfirmed)
-                    {
-                        <span class="badge bg-success">Onaylandı</span>
-                    }
-                    else if (item.StartTime < DateTime.Now)
-                    {
-                        <span class="badge bg-danger">Geçmiş/İptal Edilmeli</span>
-                    }
-                    else
-                    {
-                        <span class="badge bg-warning text-dark">Beklemede</span>
-                    }
-                </td>
+            @* Özet Bilgiler (Opsiyonel: Controller'dan ViewBag ile gönderilebilir) *@
+            @{
+                var pendingCount = Model.Count(a => !a.IsConfirmed && a.StartTime >= DateTime.Now);
+                var totalCount = Model.Count();
+            }
+            <div class="row text-center mt-3">
+                <div class="col-md-6 mb-2">
+                    <h5 class="text-warning">Bekleyen Onay: @pendingCount</h5>
+                </div>
+                <div class="col-md-6 mb-2">
+                    <h5 class="text-info">Toplam Randevu: @totalCount</h5>
+                </div>
+            </div>
+        </div>
+    </div>
 
-                @* CS8602 Düzeltmesi: Null Kontrolü eklendi (item.Trainer?.Name) *@
-                <td>@(item.Trainer?.Name)</td>
+    <div class="table-responsive">
+        <table class="table table-dark table-striped table-hover align-middle shadow-lg">
+            <thead>
+                <tr class="text-primary border-bottom border-primary">
+                    <th>ID</th>
+                    <th><i class="fas fa-users me-1"></i> Kullanıcı</th>
+                    <th><i class="fas fa-calendar-day me-1"></i> Zaman</th>
+                    <th><i class="fas fa-chalkboard-teacher me-1"></i> Eğitmen</th>
+                    <th><i class="fas fa-hand-holding me-1"></i> Hizmet</th>
+                    <th><i class="fas fa-info-circle me-1"></i> Durum</th>
+                    <th class="text-center"><i class="fas fa-wrench me-1"></i> İşlemler</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    // Duruma göre satır arka planını daha az müdahaleci renklerle belirleyelim.
+                    string rowClass = item.IsConfirmed ? "bg-success bg-opacity-10" :
+                    (item.StartTime < DateTime.Now && !item.IsConfirmed ? "bg-danger bg-opacity-10" : "bg-warning bg-opacity-10");
 
-                @* CS8602 Düzeltmesi: Null Kontrolü eklendi (item.Service?.Name) *@
-                <td>@(item.Service?.Name)</td>
+                    <tr class="@rowClass">
+                        <td class="text-muted">#@item.AppointmentId</td>
 
-                <td>@item.StartTime.ToString("dd.MM.yyyy HH:mm")</td>
+                        @* Kullanıcı E-posta *@
+                        <td>@(item.User?.Email ?? item.UserId)</td>
 
-                @* CS8602 Düzeltmesi: Null Kontrolü eklendi. User null ise UserId'yi göster (@item.User?.Email ?? item.UserId) *@
-                <td>@(item.User?.Email ?? item.UserId)</td>
+                        @* Başlangıç Zamanı *@
+                        <td class="fw-bold">@item.StartTime.ToString("dd.MM.yyyy") <span class="badge bg-secondary">@item.StartTime.ToString("HH:mm")</span></td>
 
-                <td>
-                    @if (!item.IsConfirmed && item.StartTime >= DateTime.Now)
-                    {
-                        // Sadece onaylanmamış ve tarihi geçmemiş randevular için ONAYLA butonu
-                        <form asp-controller="AdminAppointment" asp-action="Confirm" method="post" class="d-inline">
-                            <input type="hidden" name="id" value="@item.AppointmentId" />
-                            <input type="hidden" name="isConfirmed" value="true" />
-                            <button type="submit" class="btn btn-sm btn-success" onclick="return confirm('Bu randevuyu onaylamak istediğinizden emin misiniz?');">Onayla</button>
-                        </form>
-                    }
-                    else if (item.IsConfirmed)
-                    {
-                        // Onaylanmış randevular için REDDET butonu
-                        <form asp-controller="AdminAppointment" asp-action="Confirm" method="post" class="d-inline">
-                            <input type="hidden" name="id" value="@item.AppointmentId" />
-                            <input type="hidden" name="isConfirmed" value="false" />
-                            <button type="submit" class="btn btn-sm btn-secondary" onclick="return confirm('Bu randevunun onayını kaldırmak/Reddetmek istediğinizden emin misiniz?');">Reddet</button>
-                        </form>
-                    }
+                        @* Eğitmen ve Hizmet *@
+                        <td>@(item.Trainer?.Name ?? "Yok")</td>
+                        <td>@(item.Service?.Name ?? "Tanımsız")</td>
 
-                    <a asp-controller="AdminAppointment" asp-action="Details" asp-route-id="@item.AppointmentId" class="btn btn-sm btn-info">Detay</a>
-                    <a asp-controller="AdminAppointment" asp-action="Delete" asp-route-id="@item.AppointmentId" class="btn btn-sm btn-danger">Sil</a>
-                </td>
-            </tr>
-        }
-    </tbody>
-</table>
+                        @* Durum Etiketi *@
+                        <td>
+                            @if (item.IsConfirmed)
+                            {
+                                <span class="badge bg-success py-2"><i class="fas fa-check-circle me-1"></i> Onaylandı</span>
+                            }
+                            else if (item.StartTime < DateTime.Now)
+                            {
+                                <span class="badge bg-danger py-2"><i class="fas fa-times-circle me-1"></i> Geçmiş/İptal</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-warning text-dark py-2"><i class="fas fa-hourglass-half me-1"></i> Beklemede</span>
+                            }
+                        </td>
+
+                        @* İşlemler Butonları *@
+                        <td class="text-center">
+                            @if (!item.IsConfirmed && item.StartTime >= DateTime.Now)
+                            {
+                                // ONAYLA Butonu
+                                <form asp-controller="AdminAppointment" asp-action="Confirm" method="post" class="d-inline me-1">
+                                    <input type="hidden" name="id" value="@item.AppointmentId" />
+                                    <input type="hidden" name="isConfirmed" value="true" />
+                                    <button type="submit" class="btn btn-sm btn-success shadow-sm" title="Randevuyu Onayla" onclick="return confirm('Bu randevuyu onaylamak istediğinizden emin misiniz?');">
+                                        <i class="fas fa-check"></i> Onayla
+                                    </button>
+                                </form>
+                            }
+                            else if (item.IsConfirmed && item.StartTime >= DateTime.Now)
+                            {
+                                // REDDET Butonu (Onayı Kaldır)
+                                <form asp-controller="AdminAppointment" asp-action="Confirm" method="post" class="d-inline me-1">
+                                    <input type="hidden" name="id" value="@item.AppointmentId" />
+                                    <input type="hidden" name="isConfirmed" value="false" />
+                                    <button type="submit" class="btn btn-sm btn-secondary shadow-sm" title="Randevunun Onayını Kaldır/Reddet" onclick="return confirm('Bu randevunun onayını kaldırmak/Reddetmek istediğinizden emin misiniz?');">
+                                        <i class="fas fa-undo"></i> Reddet
+                                    </button>
+                                </form>
+                            }
+
+                            <a asp-controller="AdminAppointment" asp-action="Details" asp-route-id="@item.AppointmentId" class="btn btn-sm btn-info shadow-sm me-1" title="Detayları Gör">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            <a asp-controller="AdminAppointment" asp-action="Delete" asp-route-id="@item.AppointmentId" class="btn btn-sm btn-danger shadow-sm" title="Randevuyu Sil">
+                                <i class="fas fa-trash-alt"></i>
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-info text-center mt-4">
+            <i class="fas fa-info-circle me-1"></i> Şu anda yönetilecek bekleyen veya geçmiş randevu bulunmamaktadır.
+        </div>
+    }
+</div>

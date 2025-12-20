@@ -1,0 +1,95 @@
+﻿@model FitnessCenterProject.Models.AIRequestViewModel
+
+@{
+    ViewData["Title"] = "Akıllı Plan Oluşturucu";
+    Layout = "~/Views/Shared/_Layout.cshtml"; // Layout kullanımı varsayılır
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+
+            <div class="card shadow-lg border-0 bg-dark text-white">
+                <div class="card-header bg-info text-white">
+                    <h2 class="mb-0"><i class="fas fa-robot me-2"></i> Akıllı Antrenman ve Diyet Planı</h2>
+                </div>
+
+                <div class="card-body p-4">
+                    <p class="text-secondary mb-4">
+                        Boy, kilo ve hedeflerinizi girerek size özel, yapay zeka destekli planınızı anında oluşturun.
+                    </p>
+
+                    <form asp-action="GeneratePlan" method="post">
+
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Boy" class="form-label fw-bold"><i class="fas fa-ruler-vertical me-1"></i> Boy (cm)</label>
+                                <input asp-for="Boy" class="form-control bg-secondary text-white border-0" placeholder="Örn: 175" />
+                                <span asp-validation-for="Boy" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Kilo" class="form-label fw-bold"><i class="fas fa-weight me-1"></i> Kilo (kg)</label>
+                                <input asp-for="Kilo" class="form-control bg-secondary text-white border-0" placeholder="Örn: 70" />
+                                <span asp-validation-for="Kilo" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Hedef" class="form-label fw-bold"><i class="fas fa-bullseye me-1"></i> Ana Hedefiniz</label>
+                            <select asp-for="Hedef" class="form-select bg-secondary text-white border-0">
+                                <option value="" selected disabled>-- Lütfen bir hedef seçiniz --</option>
+                                @foreach (var hedef in ViewBag.Hedefler)
+                                {
+                                    <option value="@hedef">@hedef</option>
+                                }
+                            </select>
+                            <span asp-validation-for="Hedef" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="HaftalikEgzersizSayisi" class="form-label fw-bold"><i class="fas fa-calendar-alt me-1"></i> Haftalık Egzersiz Sıklığı (Gün)</label>
+                            <input asp-for="HaftalikEgzersizSayisi" type="number" class="form-control bg-secondary text-white border-0" min="1" max="7" placeholder="Örn: 3" />
+                            <span asp-validation-for="HaftalikEgzersizSayisi" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-4">
+                            <label asp-for="EkBilgiler" class="form-label fw-bold"><i class="fas fa-notes-medical me-1"></i> Ek Bilgiler (Alerji, Tıbbi Durum, Sevilen Yemekler vb.)</label>
+                            <textarea asp-for="EkBilgiler" class="form-control bg-secondary text-white border-0" rows="3" placeholder="Örn: Glutene alerjim var. Vegan besleniyorum."></textarea>
+                            <span asp-validation-for="EkBilgiler" class="text-danger"></span>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-info btn-lg shadow">
+                                <i class="fas fa-cogs me-1"></i> Planımı Oluştur!
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            @if (!string.IsNullOrEmpty(Model.YapayZekaYaniti))
+            {
+                <div class="card shadow-lg border-0 bg-dark text-white mt-5">
+                    <div class="card-header bg-success text-white">
+                        <h3 class="mb-0"><i class="fas fa-medal me-2"></i> Yapay Zeka Plan Önerisi</h3>
+                    </div>
+                    <div class="card-body bg-dark text-white p-4">
+                        <div class="p-3 border border-secondary rounded" style="background-color: #333;">
+                            @* API'den gelen HTML içeriği olduğu gibi render edilir *@
+                            @Html.Raw(Model.YapayZekaYaniti)
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

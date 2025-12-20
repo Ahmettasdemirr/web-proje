@@ -1,22 +1,139 @@
-html {
-  font-size: 14px;
+/* ========================================= */
+/* TEMEL RENK PALETÝ VE DEÐÝÞKENLER (PRO FIT) */
+/* ========================================= */
+:root {
+    --primary-color: #007bff; /* Tech Blue (Ana Eylem/Link) */
+    --accent-color: #ffc107; /* Energy Yellow (AI/Vurgu) */
+    --dark-bg: #1a1a1a; /* Koyu Arkaplan */
+    --soft-bg: #2c2c2c; /* Ýkincil Koyu Alan (Kartlar, Alternatif Bölümler) */
+    --light-text: #f8f9fa; /* Açýk Metin */
+    --secondary-text: #adb5bd; /* Ýkincil Metin */
 }
 
-@media (min-width: 768px) {
-  html {
-    font-size: 16px;
-  }
-}
-
-.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
-}
-
-html {
-  position: relative;
-  min-height: 100%;
-}
-
+/* ========================================= */
+/* GENEL AYARLAR VE ARKA PLAN (PARALLAX EFEKTÝ) */
+/* ========================================= */
 body {
-  margin-bottom: 60px;
+    background-color: var(--dark-bg);
+    color: var(--light-text);
+    font-family: 'Montserrat', sans-serif;
+    padding-top: 56px;
+}
+
+/* ANA ÝÇERÝK ALANI: Sabit Arkaplan (Kaydýrma Efekti Ýçin) */
+main[role="main"] {
+    /* Buraya yüksek çözünürlüklü spor resminizi eklemeyi unutmayýn */
+    background: url('../img/fitness.png') no-repeat center center fixed;
+    background-size: cover;
+    min-height: calc(100vh - 56px);
+    display: block;
+}
+
+/* Baðlantý Stilleri */
+a {
+    color: var(--primary-color);
+    text-decoration: none;
+    transition: color 0.3s;
+}
+
+    a:hover {
+        color: var(--accent-color); /* Sarý Hover */
+    }
+
+/* ========================================= */
+/* NAVÝGASYON VE HEADER */
+/* ========================================= */
+.navbar {
+    background-color: var(--dark-bg) !important;
+    border-bottom: 3px solid var(--accent-color);
+}
+
+.navbar-brand, .nav-link {
+    color: var(--light-text) !important;
+    font-weight: 600;
+}
+
+    .nav-link:hover {
+        color: var(--accent-color) !important;
+    }
+
+
+/* ========================================= */
+/* ÝÇERÝK BÖLÜMLERÝ VE ÞEFFAFLIK KATMANLARI (TEK TÝP ÞEFFAF SÝYAH) */
+/* ========================================= */
+
+/* TÜM ÝÇERÝK BÖLÜMLERÝ ÝÇÝN KULLANILACAK TEK SINIF */
+.content-section-uniform {
+    padding: 100px 0;
+    /* Tek tip Þeffaf Siyah/Koyu Gri Arkaplan: dark-bg'nin (%90) þeffaflýðý */
+    background-color: rgba(26, 26, 26, 0.9);
+    color: var(--light-text);
+    border-bottom: 3px solid rgba(255, 255, 255, 0.05); /* Çok hafif bir ayrým çizgisi */
+}
+
+.section-title {
+    color: var(--primary-color);
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+/* ========================================= */
+/* KARTLAR VE ÝKONLAR */
+/* ========================================= */
+.card {
+    /* Kartlar, content-section'dan biraz daha þeffaf olmalý */
+    background-color: rgba(44, 44, 44, 0.8); /* soft-bg'nin %80 þeffaflýðý */
+    border: 1px solid var(--primary-color); /* Mavi border korundu */
+    transition: transform 0.3s, border-color 0.3s;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+}
+
+    .card:hover {
+        transform: translateY(-5px);
+        border-color: var(--accent-color);
+    }
+
+.feature-icon {
+    color: var(--accent-color); /* Sarý Ýkonlar */
+    font-size: 3rem;
+    margin-bottom: 15px;
+}
+
+/* ========================================= */
+/* BUTONLAR */
+/* ========================================= */
+.btn-primary-action {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+    font-weight: 600;
+    transition: all 0.3s;
+}
+
+    .btn-primary-action:hover {
+        background-color: #0056b3;
+        border-color: #0056b3;
+    }
+
+.btn-accent {
+    background-color: var(--accent-color);
+    border-color: var(--accent-color);
+    color: var(--dark-bg); /* Siyah yazý */
+    font-weight: 700;
+}
+
+    .btn-accent:hover {
+        background-color: #e0ac00;
+        border-color: #e0ac00;
+    }
+
+/* ========================================= */
+/* FOOTER */
+/* ========================================= */
+.footer {
+    background-color: var(--dark-bg);
+    border-top: 3px solid var(--primary-color);
+    color: var(--secondary-text);
+    padding: 30px 0;
+    text-align: center;
 }

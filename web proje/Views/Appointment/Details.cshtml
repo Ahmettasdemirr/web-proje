@@ -2,52 +2,67 @@
 
 @{
     ViewData["Title"] = "Randevu Detayları";
+    Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<h1>Randevu Detayları</h1>
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-lg">
+                <div class="card-header bg-primary text-white">
+                    <h2 class="mb-0"><i class="fas fa-info-circle me-2"></i> Randevu Detayları</h2>
+                </div>
+                <div class="card-body">
+                    <h4 class="card-title mb-4">@Model.StartTime.ToString("dd MMMM yyyy HH:mm") Randevusu</h4>
 
-<div>
-    <hr />
-    <dl class="row">
-        <dt class="col-sm-3">
-            Eğitmen
-        </dt>
-        <dd class="col-sm-9">
-            @(Model.Trainer != null ? Model.Trainer.Name : "Bilinmiyor")
-        </dd>
-        <dt class="col-sm-3">
-            Hizmet
-        </dt>
-        <dd class="col-sm-9">
-            @(Model.Service != null ? Model.Service.Name : "Bilinmiyor")
-        </dd>
-        <dt class="col-sm-3">
-            Başlangıç Zamanı
-        </dt>
-        <dd class="col-sm-9">
-            @Html.DisplayFor(model => model.StartTime)
-        </dd>
-        <dt class="col-sm-3">
-            Bitiş Zamanı
-        </dt>
-        <dd class="col-sm-9">
-            @Html.DisplayFor(model => model.EndTime)
-        </dd>
-        <dt class="col-sm-3">
-            Notlar
-        </dt>
-        <dd class="col-sm-9">
-            @Html.DisplayFor(model => model.Notes)
-        </dd>
-        <dt class="col-sm-3">
-            Durum
-        </dt>
-        <dd class="col-sm-9">
-            @(Model.IsConfirmed ? "Onaylandı" : "Beklemede")
-        </dd>
-    </dl>
-</div>
-<div>
-    <a asp-action="Edit" asp-route-id="@Model.AppointmentId" class="btn btn-warning">Düzenle</a> |
-    <a asp-action="Index">Randevu Listesine Geri Dön</a>
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4 text-start fw-bold">Eğitmen:</dt>
+                        <dd class="col-sm-8 text-end">
+                            @(Model.Trainer != null ? Model.Trainer.Name : "Bilinmiyor")
+                        </dd>
+
+                        <dt class="col-sm-4 text-start fw-bold">Hizmet:</dt>
+                        <dd class="col-sm-8 text-end">
+                            @(Model.Service != null ? Model.Service.Name : "Bilinmiyor")
+                        </dd>
+
+                        <dt class="col-sm-4 text-start fw-bold">Başlangıç Zamanı:</dt>
+                        <dd class="col-sm-8 text-end">
+                            @Model.StartTime.ToString("dd.MM.yyyy HH:mm")
+                        </dd>
+
+                        <dt class="col-sm-4 text-start fw-bold">Bitiş Zamanı:</dt>
+                        <dd class="col-sm-8 text-end">
+                            @Model.EndTime.ToString("dd.MM.yyyy HH:mm")
+                        </dd>
+
+                        <dt class="col-sm-4 text-start fw-bold">Notlar:</dt>
+                        <dd class="col-sm-8 text-end">
+                            @(string.IsNullOrEmpty(Model.Notes) ? "Yok" : Model.Notes)
+                        </dd>
+
+                        <dt class="col-sm-4 text-start fw-bold">Durum:</dt>
+                        <dd class="col-sm-8 text-end">
+                            @if (Model.IsConfirmed)
+                            {
+                                <span class="badge bg-success py-2 px-3">Onaylandı</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-warning text-dark py-2 px-3">Beklemede</span>
+                            }
+                        </dd>
+                    </dl>
+                </div>
+
+                <div class="card-footer d-flex justify-content-between">
+                    <a asp-action="Index" class="btn btn-secondary"><i class="fas fa-list me-1"></i> Randevu Listesi</a>
+
+                    <a asp-action="Delete" asp-route-id="@Model.AppointmentId" class="btn btn-danger">
+                        <i class="fas fa-trash-alt me-1"></i> Randevuyu İptal Et
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>

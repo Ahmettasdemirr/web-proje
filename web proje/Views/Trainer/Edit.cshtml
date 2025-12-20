@@ -2,56 +2,81 @@
 
 @{
     ViewData["Title"] = "Eğitmen Düzenle";
-    // Eğitmenin mevcut hizmetlerinin Id'lerini al
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    // 💡 KRİTİK DÜZELTME: Controller'dan gelen ViewData["AllServices"] doğru okunuyor.
+    var allServices = ViewData["AllServices"] as List<FitnessCenterProject.Models.Service>;
+
+    // Eğitmenin mevcut hizmetlerinin Id'lerini al (Bu kısım sizde zaten doğruydu)
     var selectedIds = Model.TrainerServices.Select(ts => ts.ServiceId).ToHashSet();
 }
 
-<h1>Eğitmen Düzenle: @Model.Name</h1>
-<hr />
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
 
-<div class="row">
-    <div class="col-md-6">
-        <form asp-action="Edit">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <input type="hidden" asp-for="TrainerId" />
-
-            <div class="form-group mb-3">
-                <label asp-for="Name" class="control-label"></label>
-                <input asp-for="Name" class="form-control" />
-                <span asp-validation-for="Name" class="text-danger"></span>
-            </div>
-
-            @* 💡 YENİ ALAN: Hizmetlerin Seçimi (Mevcut Seçimleri Gösterir) *@
-            <div class="form-group mb-4">
-                <label class="control-label">Sunabileceği Hizmetler</label>
-                <div class="border p-3" style="max-height: 250px; overflow-y: auto;">
-                    @if (ViewBag.Services != null)
-                    {
-                        @foreach (var service in ViewBag.Services)
-                        {
-                            <div class="form-check">
-                                @* Mevcut hizmet id'si, seçili Id'ler listesinde varsa 'checked' olarak işaretle *@
-                                <input class="form-check-input" type="checkbox" name="selectedServiceIds" value="@service.ServiceId" id="service_@service.ServiceId"
-                                       @(selectedIds.Contains(service.ServiceId) ? "checked" : "")>
-                                <label class="form-check-label" for="service_@service.ServiceId">
-                                    @service.Name (@service.Price.ToString("C"))
-                                </label>
-                            </div>
-                        }
-                    }
-                    else
-                    {
-                        <p class="text-danger">Hizmetler yüklenemedi.</p>
-                    }
+            <div class="card bg-dark text-light shadow-lg border-0">
+                <div class="card-header bg-soft-bg border-bottom border-primary">
+                    <h3 class="fw-bold mb-0 text-light"><i class="fas fa-edit me-2 text-accent"></i> Eğitmeni Düzenle: @Model.Name</h3>
                 </div>
-                <small class="text-muted">Eğitmenin sunacağı hizmetleri güncelleyin.</small>
-            </div>
 
-            <div class="form-group">
-                <input type="submit" value="Kaydet" class="btn btn-success" />
-                <a asp-action="Index" class="btn btn-secondary">Listeye Geri Dön</a>
+                <div class="card-body p-4">
+                    <form asp-action="Edit" method="post">
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+                        <input type="hidden" asp-for="TrainerId" />
+
+                        <div class="form-group mb-4">
+                            <label asp-for="Name" class="form-label fw-bold">Eğitmen Adı ve Soyadı</label>
+                            <input asp-for="Name" class="form-control form-control-dark" />
+                            <span asp-validation-for="Name" class="text-danger small"></span>
+                        </div>
+
+                        <div class="form-group mb-4">
+                            <label class="form-label fw-bold d-block">Sunabileceği Hizmetler</label>
+
+                            <div class="border border-soft-bg p-3 rounded" style="max-height: 250px; overflow-y: auto;">
+                                <div class="row g-2">
+                                    @if (allServices != null && allServices.Any()) // Artık allServices'i kontrol ediyoruz
+                                    {
+                                        @foreach (var service in allServices)
+                                        {
+                                            <div class="col-md-6 col-lg-4">
+                                                <div class="form-check form-check-inline form-check-dark">
+                                                    <input class="form-check-input"
+                                                           type="checkbox"
+                                                           name="selectedServiceIds"
+                                                           value="@service.ServiceId"
+                                                           id="service_@service.ServiceId"
+                                                           @(selectedIds.Contains(service.ServiceId) ? "checked" : "")>
+                                                    <label class="form-check-label" for="service_@service.ServiceId">
+                                                        @service.Name
+                                                        <span class="text-secondary-text">(@service.Price.ToString("C"))</span>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <p class="text-warning">⚠️ Hizmetler yüklenemedi veya sistemde hiç hizmet tanımlanmamış.</p>
+                                    }
+                                </div>
+                            </div>
+                            <small class="text-secondary-text mt-2 d-block">Eğitmenin sunacağı hizmetleri güncelleyiniz.</small>
+                        </div>
+
+                        <div class="mt-4 pt-3 border-top border-soft-bg d-flex justify-content-between">
+                            <a asp-action="Index" class="btn btn-secondary-action">
+                                <i class="fas fa-arrow-left me-2"></i> Listeye Geri Dön
+                            </a>
+                            <button type="submit" value="Kaydet" class="btn btn-primary-action">
+                                <i class="fas fa-sync-alt me-2"></i> Değişiklikleri Kaydet
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
-        </form>
+        </div>
     </div>
 </div>
 
@@ -59,4 +84,56 @@
     @{
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
+
+    <style>
+        .form-control-dark {
+            background-color: var(--soft-bg);
+            color: var(--light-text);
+            border: 1px solid var(--soft-bg);
+            transition: border-color 0.3s;
+        }
+
+            .form-control-dark:focus {
+                background-color: var(--soft-bg);
+                color: var(--light-text);
+                border-color: var(--primary-color);
+                box-shadow: 0 0 0 0.25rem rgba(0, 123, 255, 0.25);
+            }
+
+        .form-check-dark .form-check-input {
+            background-color: var(--soft-bg);
+            border: 1px solid var(--secondary-text);
+        }
+
+            .form-check-dark .form-check-input:checked {
+                background-color: var(--primary-color);
+                border-color: var(--primary-color);
+            }
+
+        .bg-soft-bg {
+            background-color: var(--soft-bg) !important;
+        }
+        /* Action butonları için özel stil */
+        .btn-primary-action {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            color: white;
+        }
+
+            .btn-primary-action:hover {
+                background-color: #0056b3;
+                border-color: #0056b3;
+            }
+
+        .btn-secondary-action {
+            background-color: var(--soft-bg);
+            border-color: var(--soft-bg);
+            color: var(--light-text);
+        }
+
+            .btn-secondary-action:hover {
+                background-color: #495057;
+                border-color: #495057;
+            }
+    </style>
 }

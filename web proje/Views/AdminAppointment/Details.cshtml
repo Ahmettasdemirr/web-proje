@@ -2,42 +2,101 @@
 
 @{
     ViewData["Title"] = "Randevu Detayları (Yönetici)";
+    Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<h1>Randevu Detayları</h1>
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
 
-<div>
-    <h4>ID: @Model.AppointmentId</h4>
-    <hr />
-    <dl class="row">
+            <div class="card shadow-lg border-0 bg-dark text-white">
 
-        @* Satır 14 uyarısı için düzeltme: Trainer null ise boş bırakır *@
-        <dt class="col-sm-3">Eğitmen</dt>
-        <dd class="col-sm-9">@(Model.Trainer?.Name ?? "Bilinmiyor")</dd> @* <--- DÜZELTME BURADA *@
+                <div class="card-header bg-info text-white">
+                    <h3 class="mb-0">
+                        <i class="fas fa-search me-2"></i> Randevu Detayları <small class="text-white-50 ms-3">#@Model.AppointmentId</small>
+                    </h3>
+                </div>
 
-        @* Satır 17 uyarısı için düzeltme: Service null ise boş bırakır *@
-        <dt class="col-sm-3">Hizmet</dt>
-        <dd class="col-sm-9">@(Model.Service?.Name ?? "Bilinmiyor")</dd> @* <--- DÜZELTME BURADA *@
+                <div class="card-body">
 
-        @* Satır 20 uyarısı için düzeltme: User null ise UserId'yi gösterir *@
-        <dt class="col-sm-3">Kullanıcı E-posta</dt>
-        <dd class="col-sm-9">@(Model.User?.Email ?? Model.UserId ?? "Bilinmiyor")</dd> @* <--- DÜZELTME BURADA *@
+                    @{
+                        string statusText = Model.IsConfirmed ? "✅ Onaylandı" : "❌ Beklemede";
+                        string statusClass = Model.IsConfirmed ? "alert-success" : "alert-warning text-dark";
+                    }
+                    <div class="alert @statusClass fw-bold text-center">
+                        <i class="fas fa-info-circle me-1"></i> Durum: @statusText
+                    </div>
 
-        <dt class="col-sm-3">Başlangıç Zamanı</dt>
-        <dd class="col-sm-9">@Model.StartTime.ToString("dd.MM.yyyy HH:mm")</dd>
+                    <hr class="border-secondary" />
 
-        <dt class="col-sm-3">Bitiş Zamanı</dt>
-        <dd class="col-sm-9">@Model.EndTime.ToString("dd.MM.yyyy HH:mm")</dd>
+                    <dl class="row mb-0">
 
-        <dt class="col-sm-3">Notlar</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.Notes)</dd>
+                        <dt class="col-sm-4 text-primary">Eğitmen</dt>
+                        <dd class="col-sm-8 fw-bold">@(Model.Trainer?.Name ?? "Bilinmiyor")</dd>
 
-        <dt class="col-sm-3">Onay Durumu</dt>
-        <dd class="col-sm-9">
-            @(Model.IsConfirmed ? "✅ Onaylandı" : "❌ Beklemede")
-        </dd>
-    </dl>
-</div>
-<div>
-    <a asp-action="Index">Yönetici Listesine Geri Dön</a>
+                        <dt class="col-sm-4 text-primary">Hizmet</dt>
+                        <dd class="col-sm-8 fw-bold">@(Model.Service?.Name ?? "Bilinmiyor")</dd>
+
+                        <dt class="col-sm-4 text-primary">Kullanıcı (E-posta)</dt>
+                        <dd class="col-sm-8">@(Model.User?.Email ?? Model.UserId ?? "Bilinmiyor")</dd>
+
+                        <dt class="col-sm-4 text-primary">Başlangıç Zamanı</dt>
+                        <dd class="col-sm-8">
+                            <span class="badge bg-secondary me-2">@Model.StartTime.ToString("dd.MM.yyyy")</span>
+                            <span class="badge bg-secondary">@Model.StartTime.ToString("HH:mm")</span>
+                        </dd>
+
+                        <dt class="col-sm-4 text-primary">Bitiş Zamanı</dt>
+                        <dd class="col-sm-8">
+                            <span class="badge bg-secondary me-2">@Model.EndTime.ToString("dd.MM.yyyy")</span>
+                            <span class="badge bg-secondary">@Model.EndTime.ToString("HH:mm")</span>
+                        </dd>
+
+                        <dt class="col-sm-4 text-primary">Notlar</dt>
+                        <dd class="col-sm-8">
+                            <div class="p-2 bg-secondary rounded text-light small">
+                                @(string.IsNullOrEmpty(Model.Notes) ? "Kullanıcı notu bulunmamaktadır." : Model.Notes)
+                            </div>
+                        </dd>
+
+                    </dl>
+                </div>
+
+                <div class="card-footer d-flex justify-content-between">
+
+                    <div>
+                        @if (!Model.IsConfirmed && Model.StartTime >= DateTime.Now)
+                        {
+                            <form asp-controller="AdminAppointment" asp-action="Confirm" method="post" class="d-inline">
+                                <input type="hidden" name="id" value="@Model.AppointmentId" />
+                                <input type="hidden" name="isConfirmed" value="true" />
+                                <button type="submit" class="btn btn-sm btn-success me-2" onclick="return confirm('Bu randevuyu onaylamak istediğinizden emin misiniz?');">
+                                    <i class="fas fa-check me-1"></i> Onayla
+                                </button>
+                            </form>
+                        }
+                        else if (Model.IsConfirmed && Model.StartTime >= DateTime.Now)
+                        {
+                            <form asp-controller="AdminAppointment" asp-action="Confirm" method="post" class="d-inline">
+                                <input type="hidden" name="id" value="@Model.AppointmentId" />
+                                <input type="hidden" name="isConfirmed" value="false" />
+                                <button type="submit" class="btn btn-sm btn-secondary me-2" onclick="return confirm('Bu randevunun onayını kaldırmak/Reddetmek istediğinizden emin misiniz?');">
+                                    <i class="fas fa-undo me-1"></i> Reddet
+                                </button>
+                            </form>
+                        }
+
+                        <a asp-controller="AdminAppointment" asp-action="Delete" asp-route-id="@Model.AppointmentId" class="btn btn-sm btn-danger" onclick="return confirm('Bu randevuyu KALICI OLARAK silmek istediğinizden emin misiniz?');">
+                            <i class="fas fa-trash-alt me-1"></i> Sil
+                        </a>
+                    </div>
+
+                    <a asp-action="Index" class="btn btn-outline-light">
+                        <i class="fas fa-arrow-left me-1"></i> Randevu Listesine Dön
+                    </a>
+                </div>
+            </div>
+
+        </div>
+    </div>
 </div>

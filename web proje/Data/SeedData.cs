@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System; // IServiceProvider için gerekli
 
 namespace FitnessCenterProject.Data
 {
@@ -11,14 +12,17 @@ namespace FitnessCenterProject.Data
     {
         public static async Task Initialize(IServiceProvider serviceProvider)
         {
+            // KRİTİK DÜZELTME: UserManager servisini 'IdentityUser' yerine 'ApplicationUser' ile alın.
+            var userManager = serviceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+            var roleManager = serviceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+
             using (var context = new ApplicationDbContext(
                 serviceProvider.GetRequiredService<DbContextOptions<ApplicationDbContext>>()))
             {
                 // Veritabanının oluşturulduğundan emin ol
                 context.Database.EnsureCreated();
 
-                // Rolleri kontrol et ve oluştur
-                var roleManager = serviceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+                // Rolleri kontrol et ve oluştur (RoleManager doğru)
                 if (!await roleManager.RoleExistsAsync("Admin"))
                 {
                     await roleManager.CreateAsync(new IdentityRole("Admin"));
@@ -29,11 +33,11 @@ namespace FitnessCenterProject.Data
                 }
 
                 // Admin Kullanıcısını kontrol et ve oluştur
-                var userManager = serviceProvider.GetRequiredService<UserManager<IdentityUser>>();
                 string adminEmail = "admin@fit.com";
                 if (await userManager.FindByEmailAsync(adminEmail) == null)
                 {
-                    var adminUser = new IdentityUser
+                    // KRİTİK DÜZELTME: Yeni kullanıcıyı IdentityUser yerine ApplicationUser olarak oluşturun.
+                    var adminUser = new ApplicationUser
                     {
                         UserName = adminEmail,
                         Email = adminEmail,
@@ -50,7 +54,8 @@ namespace FitnessCenterProject.Data
                 string userEmail = "user@fit.com";
                 if (await userManager.FindByEmailAsync(userEmail) == null)
                 {
-                    var normalUser = new IdentityUser
+                    // KRİTİK DÜZELTME: Yeni kullanıcıyı IdentityUser yerine ApplicationUser olarak oluşturun.
+                    var normalUser = new ApplicationUser
                     {
                         UserName = userEmail,
                         Email = userEmail,
@@ -90,7 +95,6 @@ namespace FitnessCenterProject.Data
                 {
                     var trainers = new Trainer[]
                     {
-                        // KRİTİK: ImageUrl kaldırıldı.
                         new Trainer { Name = "Ahmet Taşdemir" },
                         new Trainer { Name = "Muhammet Yıldız" },
                         new Trainer { Name = "Ayşe Kaya" }

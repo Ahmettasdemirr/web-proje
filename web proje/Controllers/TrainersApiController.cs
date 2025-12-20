@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Collections.Generic;
+using FitnessCenterProject.Models;
 
 namespace FitnessCenterProject.Controllers
 {
@@ -21,7 +23,7 @@ namespace FitnessCenterProject.Controllers
         [HttpGet]
         public async Task<IActionResult> GetTrainers()
         {
-            // Eğitmenleri, ilişkili TrainerServices ve Service bilgileriyle birlikte çekiyoruz.
+            // Bu metot değiştirilmedi.
             var trainers = await _context.Trainers
                 .Include(t => t.TrainerServices)
                 .ThenInclude(ts => ts.Service)
@@ -29,8 +31,6 @@ namespace FitnessCenterProject.Controllers
                 {
                     TrainerId = t.TrainerId,
                     Name = t.Name,
-                    // 💡 GÜNCELLEME: Specialty yerine Hizmet isimlerini birleştiriyoruz.
-                    Specialties = t.TrainerServices.Select(ts => ts.Service.Name).ToList(),
                     SpecialtyText = string.Join(", ", t.TrainerServices.Select(ts => ts.Service.Name)),
                 })
                 .ToListAsync();
@@ -43,13 +43,11 @@ namespace FitnessCenterProject.Controllers
             return Ok(trainers);
         }
 
-
-        // GET: api/TrainersApi/available?date=2025-12-25&startTime=14:00&duration=60&serviceId=1
-        // Belirli bir tarih, saat aralığında ve BELİRLİ BİR HİZMETİ verebilecek müsait antrenörleri döndürür.
+        // GET: api/TrainersApi/available?date=...&startTime=...&duration=...&serviceId=...
         [HttpGet("available")]
         public async Task<IActionResult> GetAvailableTrainers(string date, string startTime, int duration, int serviceId)
         {
-            // 1. Tarih ve Saat Girdilerini Birleştirme ve Kontrol Etme
+            // ... (Tarih, saat ve süre kontrolleri aynı kalır) ...
             if (!System.DateTime.TryParse($"{date} {startTime}", out System.DateTime appointmentStartTime))
             {
                 return BadRequest("Geçerli bir tarih (YYYY-MM-DD) ve başlangıç saati (HH:mm) formatı giriniz.");
@@ -63,7 +61,7 @@ namespace FitnessCenterProject.Controllers
             var service = await _context.Services.FindAsync(serviceId);
             if (service == null)
             {
-                return NotFound("Geçerli bir Hizmet ID'si (serviceId) belirtilmelidir.");
+                return NotFound("Geçerli bir Hizmet ID'si (serviceId) belirtilmelidir veya bu hizmet bulunamadı.");
             }
 
 
@@ -74,30 +72,31 @@ namespace FitnessCenterProject.Controllers
                 return BadRequest("Randevu başlangıç zamanı geçmiş bir tarih/saat olamaz.");
             }
 
-            // 2. Çakışma Kontrolü ve Hizmet Uygunluğu Kontrolü
+            // KRİTİK ÇÖZÜM: İlk aşamada sadece gerekli verileri çekiyoruz (SQL'de çalışacak kısım)
+            // Ardından ToList() ile veriyi belleğe çekip (.AsEnumerable()) kompleks işlemleri (string.Join) bellekte yapıyoruz.
 
-            // Seçilen HİZMETİ verebilecek tüm eğitmenleri çek
-            var qualifiedTrainers = await _context.Trainers
+            var allTrainersWithDetails = await _context.Trainers
                 .Include(t => t.TrainerServices).ThenInclude(ts => ts.Service)
                 .Include(t => t.Appointments)
-                .Where(t => t.TrainerServices.Any(ts => ts.ServiceId == serviceId)) // 💡 KRİTİK FİLTRE: Hizmet uygunluğu
-                .ToListAsync();
+                .ToListAsync(); // Veriyi belleğe çekeriz
 
 
-            // 3. Müsait Eğitmenleri Filtreleme (Hizmet uygunluğu kontrol edilmiş listeyi kullanıyoruz)
-            var availableTrainers = qualifiedTrainers
+            // BELLEK ÜZERİNDE FİLTRELEME VE DÖNÜŞTÜRME
+            var availableTrainers = allTrainersWithDetails
+                // 1. Randevu Çakışması Kontrolü (Müsaitlik)
                 .Where(t => !t.Appointments.Any(a =>
-                    // Çakışma kontrolü
                     (appointmentStartTime < a.EndTime && appointmentStartTime >= a.StartTime) ||
                     (appointmentEndTime > a.StartTime && appointmentEndTime <= a.EndTime) ||
                     (appointmentStartTime <= a.StartTime && appointmentEndTime >= a.EndTime)
                 ))
-                .Select(t => new
+
+                // 2. Projeksiyon (string.Join burada güvenle çalışır)
+                .Select(t => new TrainerApiResult
                 {
-                    t.TrainerId,
-                    t.Name,
-                    // 💡 GÜNCELLEME: Hizmet isimlerini Select ediyoruz
-                    SpecialtyText = string.Join(", ", t.TrainerServices.Select(ts => ts.Service.Name)),
+                    TrainerId = t.TrainerId,
+                    Name = t.Name,
+                    // Artık string.Join güvenle çalışır:
+                    Specialty = string.Join(", ", t.TrainerServices?.Select(ts => ts.Service?.Name) ?? new List<string>()),
                     Availability = $"{appointmentStartTime:dd.MM.yyyy HH:mm} - {appointmentEndTime:HH:mm}"
                 })
                 .ToList();
@@ -105,7 +104,7 @@ namespace FitnessCenterProject.Controllers
 
             if (!availableTrainers.Any())
             {
-                return NotFound($"Seçilen hizmet ({service.Name}) için, belirtilen saat aralığında müsait antrenör bulunmamaktadır.");
+                return NotFound("Belirtilen saat aralığında müsait antrenör bulunmamaktadır.");
             }
 
             return Ok(availableTrainers);

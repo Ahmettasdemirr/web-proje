@@ -1,8 +1,78 @@
 ﻿@{
-    ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "Ana Sayfa";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
-</div>
+<section class="content-section-uniform">
+    <div class="container hero-content text-center">
+        <h1 class="mb-3 display-1 fw-bolder text-uppercase text-light">
+            <span class="text-accent">ZİRVE</span>YE GİDEN YOL
+        </h1>
+        <p class="lead mb-5 fw-light text-secondary-text">
+            Yapay zeka planlaması ve uzman eğitmenlerimizle fitness hedeflerinizi gerçeğe dönüştürün.
+        </p>
+
+        <div class="d-grid gap-3 d-sm-flex justify-content-sm-center">
+            <a asp-controller="AI" asp-action="GeneratePlan" class="btn btn-lg btn-accent me-sm-3 shadow-lg">
+                <i class="fas fa-robot me-2"></i> Kendi AI Planını Oluştur
+            </a>
+            <a asp-controller="Appointment" asp-action="Create" class="btn btn-lg btn-primary-action shadow-lg">
+                <i class="fas fa-calendar-check me-2"></i> Eğitmen Randevusu Al
+            </a>
+        </div>
+    </div>
+</section>
+
+<section class="content-section-uniform">
+    <div class="container">
+        <div class="text-center mb-5">
+            <p class="section-title">TEMEL İŞLEVLERİMİZ</p>
+            <h2 class="display-6 fw-bold text-light">Neden PRO FIT Teknolojisi?</h2>
+        </div>
+        <div class="row text-center">
+
+            @* Özellik 1: AI Planlama Kartı *@
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 p-4 border-0">
+                    <div class="card-body">
+                        <i class="feature-icon fas fa-brain"></i>
+                        <h5 class="card-title text-light fw-bold">Veriyle Yönlendirilen AI</h5>
+                        <p class="card-text text-secondary-text">Biyometrik verilerinizi analiz ederek dinamik olarak programınızı günceller.</p>
+                    </div>
+                </div>
+            </div>
+
+            @* Özellik 2: Akıllı Rezervasyon Kartı *@
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 p-4 border-0">
+                    <div class="card-body">
+                        <i class="feature-icon fas fa-calendar-day"></i>
+                        <h5 class="card-title text-light fw-bold">7/24 Randevu Erişimi</h5>
+                        <p class="card-text text-secondary-text">Tüm eğitmenlerin müsaitlik durumunu gerçek zamanlı görüntüleyin ve rezervasyon yapın.</p>
+                    </div>
+                </div>
+            </div>
+
+            @* Özellik 3: Mobil Uyum Kartı *@
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 p-4 border-0">
+                    <div class="card-body">
+                        <i class="feature-icon fas fa-mobile-alt"></i>
+                        <h5 class="card-title text-light fw-bold">Cepte Tam Kontrol</h5>
+                        <p class="card-text text-secondary-text">Antrenman geçmişinizi ve randevularınızı mobil cihazınızdan kolayca yönetin.</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<section class="content-section-uniform">
+    <div class="container text-center">
+        <h3 class="fw-bolder text-light mb-3">Sertifikalı Eğitmenlerle Başlayın.</h3>
+        <p class="lead mb-4 text-secondary-text">Fitness yolculuğunuzda size rehberlik edecek uzmanları keşfedin.</p>
+        <a asp-controller="Trainer" asp-action="Index" class="btn btn-lg btn-primary-action shadow-sm">
+            Eğitmen Profillerini Gör <i class="fas fa-arrow-right ms-2"></i>
+        </a>
+    </div>
+</section>

@@ -4,120 +4,113 @@
 @inject UserManager<ApplicationUser> UserManager
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="tr">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - web_proje</title>
-
-    @* --- CSS LİNKLERİ --- *@
+    <title>@ViewData["Title"] - PRO FIT</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/web_proje.styles.css" asp-append-version="true" />
-
-    @* DATEPICKER CSS LİNKİ *@
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.min.css" />
-
-    @* İKONLAR İÇİN GEREKLİ OLABİLİR (Randevu Formu için eklenmiştir) *@
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-
 </head>
 <body>
+
     <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
             <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">web_proje</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
+
+                <a class="navbar-brand fw-bold" asp-area="" asp-controller="Home" asp-action="Index">
+                    <i class="fas fa-dumbbell text-accent me-2"></i> PRO FIT
+                </a>
+
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
 
-                    <ul class="navbar-nav flex-grow-1">
+                <div class="collapse navbar-collapse" id="navbarSupportedContent">
+
+                    @* MEVCUT PROJE ITEMLERİ *@
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
 
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Anasayfa</a>
+                            <a class="nav-link" asp-controller="Home" asp-action="Index">Anasayfa</a>
                         </li>
 
-                        @* --- Üye Menüleri: Randevularım (Giriş yapan herkes görür) --- *@
+                        @* --- Üye Menüleri --- *@
                         @if (SignInManager.IsSignedIn(User))
                         {
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-controller="Appointment" asp-action="Index">Randevularım</a>
+                                <a class="nav-link" asp-controller="AI" asp-action="GeneratePlan">AI Planım</a>
                             </li>
-
-                            @* 💡 YENİ EKLEME: Yapay Zeka Planlama (Giriş yapan herkes görür) *@
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-controller="AI" asp-action="Create">AI Planlayıcı</a>
+                                <a class="nav-link" asp-controller="Appointment" asp-action="Index">Randevularım</a>
                             </li>
                         }
 
-                        @* --- YÖNETİCİ MENÜSÜ BAŞLANGIÇ (Sadece Admin rolüne sahip kullanıcılar görür) --- *@
+                        <li class="nav-item">
+                            <a class="nav-link" asp-controller="Trainer" asp-action="Index">Eğitmenler</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-white" asp-controller="Report" asp-action="AvailableTrainers">
+                                <i class="fas fa-restroom me-1"></i> Müsait Eğitmenler
+                            </a>
+                        </li>
+
+                        @* --- YÖNETİCİ MENÜSÜ (Dropdown) --- *@
                         @if (User.IsInRole("Admin"))
                         {
                             <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle text-dark" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    Admin Panel
+                                <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    Yönetim
                                 </a>
-                                <ul class="dropdown-menu" aria-labelledby="adminDropdown">
-                                    <li class="dropdown-item">
-                                        <a class="nav-link text-dark" asp-controller="Trainer" asp-action="Index">Eğitmen Yönetimi</a>
-                                    </li>
-                                    <li class="dropdown-item">
-                                        <a class="nav-link text-dark" asp-controller="Service" asp-action="Index">Hizmet Yönetimi</a>
-                                    </li>
+                                <ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="adminDropdown">
+                                    <li><a class="dropdown-item" asp-controller="Trainer" asp-action="Index">Eğitmenler</a></li>
+                                    <li><a class="dropdown-item" asp-controller="Service" asp-action="Index">Hizmetler</a></li>
                                     <li><hr class="dropdown-divider"></li>
-                                    <li class="dropdown-item">
-                                        <a class="nav-link text-dark" asp-controller="AdminAppointment" asp-action="Index">Randevu Onayları</a>
-                                    </li>
+                                    <li><a class="dropdown-item" asp-controller="AdminAppointment" asp-action="Index">Randevu Onayları</a></li>
                                 </ul>
                             </li>
-
-                            @* 💡 GEREKSİNİM 4 RAPORU: Müsait Eğitmen Raporu (Sadece Admin görür) *@
-                            <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-controller="Report" asp-action="AvailableTrainers">API Raporu (Eğitmen)</a>
-                            </li>
                         }
-                        @* --- YÖNETİCİ MENÜSÜ SONU --- *@
-
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Gizlilik</a>
-                        </li>
 
                     </ul>
-                    @* Identity UI'dan gelen Giriş/Kayıt/Çıkış linklerini içerir *@
-                    <partial name="_LoginPartial" />
 
+                    @* Login Partial *@
+                    <partial name="_LoginPartial" />
                 </div>
             </div>
         </nav>
     </header>
-    <div class="container">
-        <main role="main" class="pb-3">
+    <div class="container-fluid p-0">
+        <main role="main">
             @RenderBody()
         </main>
     </div>
 
-    <footer class="border-top footer text-muted">
+    <footer class="footer">
         <div class="container">
-            &copy; @DateTime.Now.Year - web_proje - <a asp-area="" asp-controller="Home" asp-action="Privacy">Gizlilik</a>
+            <div class="row">
+                <div class="col-md-6 text-md-start">
+                    &copy; @DateTime.Now.Year - PRO FIT | Tüm Hakları Saklıdır.
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <a asp-controller="Home" asp-action="Privacy">Gizlilik Politikası</a> |
+                    <a href="#" target="_blank"><i class="fab fa-instagram"></i></a>
+                </div>
+            </div>
         </div>
     </footer>
 
-    @*
-    **************************************************
-    JAVASCRIPT KÜTÜPHANELERİ
-    **************************************************
-    *@
-
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
-
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/locales/bootstrap-datepicker.tr.min.js"></script>
 
     <script src="~/js/site.js" asp-append-version="true"></script>
+
+    @* Datepicker'ın CSS'ini <head> içine ekliyoruz *@
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.min.css" />
 
     @await RenderSectionAsync("Scripts", required: false)
 </body>

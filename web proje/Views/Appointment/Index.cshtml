@@ -2,51 +2,86 @@
 
 @{
     ViewData["Title"] = "Randevularım";
+    Layout = "~/Views/Shared/_Layout.cshtml"; // Layout yolu doğru görünüyor.
 }
 
-<h1>Randevularım</h1>
+<div class="container py-5">
+    <h1 class="mb-4 text-white"><i class="fas fa-calendar-alt me-2"></i> Randevularım</h1>
 
-<p>
-    <a asp-action="Create">Yeni Randevu Oluştur</a>
-</p>
+    <p>
+        <a asp-action="Create" class="btn btn-primary"><i class="fas fa-plus me-1"></i> Yeni Randevu Oluştur</a>
+    </p>
 
-@if (Model.Any())
-{
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>Eğitmen</th>
-                <th>Hizmet</th>
-                <th>Başlangıç Zamanı</th>
-                <th>Bitiş Zamanı</th>
-                <th>Notlar</th>
-                <th>Durum</th>
-                <th></th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var item in Model)
-            {
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (TempData["WarningMessage"] != null)
+    {
+        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+            @TempData["WarningMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="table-responsive">
+        <table class="table table-dark table-hover table-bordered shadow-lg">
+            <thead class="table-light text-dark">
                 <tr>
-                    <td>@(item.Trainer != null ? item.Trainer.Name : "Yok")</td> @* Trainer için Null Kontrolü *@
-                    <td>@(item.Service != null ? item.Service.Name : "Yok")</td> @* Service için Null Kontrolü *@
-                    <td>@Html.DisplayFor(modelItem => item.StartTime)</td>
-                    <td>@Html.DisplayFor(modelItem => item.EndTime)</td>
-                    <td>@Html.DisplayFor(modelItem => item.Notes)</td>
-                    <td>@(item.IsConfirmed ? "Onaylandı" : "Beklemede")</td>
-                    <td>
-                        <a asp-action="Edit" asp-route-id="@item.AppointmentId">Düzenle</a> |
-                        <a asp-action="Details" asp-route-id="@item.AppointmentId">Detaylar</a> |
-                        <a asp-action="Delete" asp-route-id="@item.AppointmentId">Sil</a>
-                    </td>
+                    <th>
+                        @Html.DisplayNameFor(model => model.StartTime)
+                    </th>
+                    <th>
+                        @Html.DisplayNameFor(model => model.Service)
+                    </th>
+                    <th>
+                        @Html.DisplayNameFor(model => model.Trainer)
+                    </th>
+                    <th>
+                        Durum
+                    </th>
+                    <th>
+                        İşlemler
+                    </th>
                 </tr>
-            }
-        </tbody>
-    </table>
-}
-else
-{
-    <div class="alert alert-info">
-        Henüz kayıtlı bir randevunuz bulunmamaktadır.
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td>
+                            @item.StartTime.ToString("dd.MM.yyyy HH:mm")
+                        </td>
+                        <td>
+                            @(item.Service?.Name ?? "Bilinmiyor")
+                        </td>
+                        <td>
+                            @(item.Trainer?.Name ?? "Bilinmiyor")
+                        </td>
+                        <td>
+                            @if (item.IsConfirmed)
+                            {
+                                <span class="badge bg-success py-2 px-3">Onaylandı</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-warning text-dark py-2 px-3">Beklemede</span>
+                            }
+                        </td>
+                        <td>
+                            <a asp-action="Details" asp-route-id="@item.AppointmentId" class="btn btn-info btn-sm me-1" title="Detaylar">
+                                <i class="fas fa-info-circle"></i> Detay
+                            </a>
+                            <a asp-action="Delete" asp-route-id="@item.AppointmentId" class="btn btn-danger btn-sm" title="İptal Et">
+                                <i class="fas fa-trash-alt"></i> İptal
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
     </div>
-}
+</div>
